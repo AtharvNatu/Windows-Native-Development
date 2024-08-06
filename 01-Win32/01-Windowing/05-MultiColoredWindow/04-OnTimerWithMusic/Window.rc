@@ -1,0 +1,4 @@
+#include "Window.h"
+
+ADN_ICON    ICON    Arch.ico
+ADN_MUSIC   WAVE     Oppenheimer.wav
