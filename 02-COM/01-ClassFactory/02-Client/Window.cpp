@@ -25,10 +25,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	//* Code
 
 	// Start COM Engine
-	hr = CoInitialize();
+	hr = CoInitialize(NULL);
 	if (FAILED(hr))
 	{
-		MessageBox(NULL, TEXT("Failed to initialize COM Library ... Exiting Now !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK;);
+		MessageBox(NULL, TEXT("Failed to initialize COM Library ... Exiting Now !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
 		exit(EXIT_FAILURE);
 	}
 
@@ -112,28 +112,32 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				DestroyWindow(hwnd);
 			}
 
+			MessageBox(hwnd, TEXT("Obtained ISum Interface !!!"), TEXT("COM Successss"), MB_ICONINFORMATION | MB_OK);
+
 			// Addition
-			iNum1 = 45;
-			iNum2 = 55;
-			pISum->SumOfTwoIntegers(iNum1, iNum2, &iResult);
-			wsprintf(str, TEXT("Sum of %d and %d = %d"), iNum1, iNum2, iResult);
-			MesssageBox(hwnd, str, TEXT("Addition Result"), MB_ICONINFORMATION | MB_OK);
+			//iNum1 = 45;
+			//iNum2 = 55;
+			//pISum->SumOfTwoIntegers(iNum1, iNum2, &iResult);
+			//wsprintf(str, TEXT("Sum of %d and %d = %d"), iNum1, iNum2, iResult);
+			//MesssageBox(hwnd, str, TEXT("Addition Result"), MB_ICONINFORMATION | MB_OK);
 
-			// Subtraction
-			hr = pISum->QueryInterface(IID_ISubtract, (void**)&pISubtract);
-			if (FAILED(hr))
-			{
-				MessageBox(hwnd, TEXT("Failed to obtain ISubtract Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
-				DestroyWindow(hwnd);
-			}
+			//// Subtraction
+			//hr = pISum->QueryInterface(IID_ISubtract, (void**)&pISubtract);
+			//if (FAILED(hr))
+			//{
+			//	MessageBox(hwnd, TEXT("Failed to obtain ISubtract Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+			//	DestroyWindow(hwnd);
+			//}
 
-			iNum1 = 45;
-			iNum2 = 55;
-			pISubtract->SubtractionOfTwoIntegers(iNum1, iNum2, &iResult);
-			wsprintf(str, TEXT("Subtraction of %d and %d = %d"), iNum1, iNum2, iResult);
-			MesssageBox(hwnd, str, TEXT("Subtraction Result"), MB_ICONINFORMATION | MB_OK);
+			//iNum1 = 45;
+			//iNum2 = 55;
+			//pISubtract->SubtractionOfTwoIntegers(iNum1, iNum2, &iResult);
+			//wsprintf(str, TEXT("Subtraction of %d and %d = %d"), iNum1, iNum2, iResult);
+			//MesssageBox(hwnd, str, TEXT("Subtraction Result"), MB_ICONINFORMATION | MB_OK);
 
-			DestroyWindow(hwnd);
+			//DestroyWindow(hwnd);
+
+
 
 		break;
 

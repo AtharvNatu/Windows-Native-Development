@@ -144,10 +144,7 @@ HRESULT CSumSubtract::SumOfTwoIntegers(int num1, int num2, int* pSum)
 HRESULT CSumSubtract::SubtractionOfTwoIntegers(int num1, int num2, int* pSubtract)
 {
 	// Code
-	if (num1 > num2)
-		*pSubtract = num1 - num2;
-	else
-		*pSubtract = num2 - num1;
+	*pSubtract = num1 - num2;
 	return S_OK;
 }
 //-----------------------------------------------------------------------------------------------------
