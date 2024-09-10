@@ -87,11 +87,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	// Variable Declarations
 	HRESULT hr = S_OK;
-	int iNum1, iNum2, iResult;
+	int iNum1 = 0, iNum2 = 0, iResult = 0;
 	TCHAR str[255];
 
 	// Function Declarations
 	void SafeInterfaceRelease(void);
+	void GetErrorMessage(HRESULT hr);
 
 	// Code
 	switch (iMsg)
@@ -109,35 +110,32 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			if (FAILED(hr))
 			{
 				MessageBox(hwnd, TEXT("Failed to obtain ISum Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr);
+				DestroyWindow(hwnd);
+			
+
+			iNum1 = 55;
+			iNum2 = 45;
+
+			// Addition
+			pISum->SumOfTwoIntegers(iNum1, iNum2, &iResult);
+			wsprintf(str, TEXT("Sum of %d and %d = %d"), iNum1, iNum2, iResult);
+			MessageBox(hwnd, str, TEXT("Addition Result"), MB_ICONINFORMATION | MB_OK);
+
+			// Subtraction
+			hr = pISum->QueryInterface(IID_ISubtract, (void**)&pISubtract);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain ISubtract Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr);
 				DestroyWindow(hwnd);
 			}
 
-			MessageBox(hwnd, TEXT("Obtained ISum Interface !!!"), TEXT("COM Successss"), MB_ICONINFORMATION | MB_OK);
+			pISubtract->SubtractionOfTwoIntegers(iNum1, iNum2, &iResult);
+			wsprintf(str, TEXT("Subtraction of %d and %d = %d"), iNum1, iNum2, iResult);
+			MessageBox(hwnd, str, TEXT("Subtraction Result"), MB_ICONINFORMATION | MB_OK);
 
-			// Addition
-			//iNum1 = 45;
-			//iNum2 = 55;
-			//pISum->SumOfTwoIntegers(iNum1, iNum2, &iResult);
-			//wsprintf(str, TEXT("Sum of %d and %d = %d"), iNum1, iNum2, iResult);
-			//MesssageBox(hwnd, str, TEXT("Addition Result"), MB_ICONINFORMATION | MB_OK);
-
-			//// Subtraction
-			//hr = pISum->QueryInterface(IID_ISubtract, (void**)&pISubtract);
-			//if (FAILED(hr))
-			//{
-			//	MessageBox(hwnd, TEXT("Failed to obtain ISubtract Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
-			//	DestroyWindow(hwnd);
-			//}
-
-			//iNum1 = 45;
-			//iNum2 = 55;
-			//pISubtract->SubtractionOfTwoIntegers(iNum1, iNum2, &iResult);
-			//wsprintf(str, TEXT("Subtraction of %d and %d = %d"), iNum1, iNum2, iResult);
-			//MesssageBox(hwnd, str, TEXT("Subtraction Result"), MB_ICONINFORMATION | MB_OK);
-
-			//DestroyWindow(hwnd);
-
-
+			DestroyWindow(hwnd);
 
 		break;
 
@@ -152,6 +150,31 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 	//* Calling Default Window Procedure
 	return DefWindowProc(hwnd, iMsg, wParam, lParam);
+}
+
+void GetErrorMessage(HRESULT hr)
+{
+	// Variable Declarationss
+	LPVOID buffer;
+
+	// Code
+	DWORD dw = FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		hr,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPSTR)&buffer,
+		0,
+		NULL
+	);
+
+	if (dw != 0)
+	{
+		MessageBox(NULL, (LPCTSTR)buffer, TEXT("COM Error"), MB_ICONERROR | MB_OK);
+		LocalFree(buffer);
+	}
+	else
+		MessageBox(NULL, TEXT("Unknown Error Code !!!"), TEXT("Unknown Error"), MB_ICONERROR | MB_OK);
 }
 
 void SafeInterfaceRelease(void)
