@@ -1,4 +1,4 @@
-LIBRARY ClassFactoryDllServerWithRegFile.dll
+LIBRARY ContainmentOuterComponentWithRegFile.dll
 EXPORTS
     DllGetClassObject   PRIVATE
     DllCanUnloadNow     PRIVATE

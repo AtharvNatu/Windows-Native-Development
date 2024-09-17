@@ -1,0 +1,5 @@
+Windows Registry Editor Version 5.00
+[HKEY_CLASSES_ROOT\CLSID\{321E5953-3F44-4109-B36A-CB465AFAC4BF}]
+@="MyContainmentOuterComponentDLL"
+[HKEY_CLASSES_ROOT\CLSID\{321E5953-3F44-4109-B36A-CB465AFAC4BF}\InProcServer32]
+@="C:\\Windows\\System32\\ContainmentOuterComponentWithRegFile.dll"

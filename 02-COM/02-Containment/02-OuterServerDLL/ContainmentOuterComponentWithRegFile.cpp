@@ -1,16 +1,19 @@
 #include <Windows.h>
-#include "ClassFactoryDllServerWithRegFile.h"
+#include "ContainmentOuterComponentWithRegFile.h"
+#include "ContainmentInnerComponentWithRegFile.h"
 
 // Class Declarations
-class CSumSubtract :public ISum, ISubtract
+class Calculator :public ISum, ISubtract, IMultiply, IDivide
 {
 	private:
 		long m_cRef;
+		IMultiply* m_pIMultiply;
+		IDivide* m_pIDivide;
 
 	public:
 		// Constructor and Destructor Declarations
-		CSumSubtract(void);
-		~CSumSubtract(void);
+		Calculator(void);
+		~Calculator(void);
 
 		// Inherited IUnknown Method Declarations
 		HRESULT __stdcall QueryInterface(REFIID, void**);
@@ -22,17 +25,26 @@ class CSumSubtract :public ISum, ISubtract
 
 		// Inherited ISubtract Method Declarations
 		HRESULT __stdcall SubtractionOfTwoIntegers(int, int, int*);
+
+		// Inherited IMultiply Method Declarations
+		HRESULT __stdcall MultiplicationOfTwoIntegers(int, int, int*);
+		
+		// Inherited IDivide Method Declarations
+		HRESULT __stdcall DivisionOfTwoIntegers(int, int, int*);
+
+		// Custom Method for Inner Component Creation
+		HRESULT __stdcall InitializeInnerComponent(void);
 };
 
-class CSumSubtractClassFactory :public IClassFactory
+class CalculatorClassFactory :public IClassFactory
 {
 	private:
 		long m_cRef;
 
 	public:
 		// Constructor and Destructor Declarations
-		CSumSubtractClassFactory(void);
-		~CSumSubtractClassFactory(void);
+		CalculatorClassFactory(void);
+		~CalculatorClassFactory(void);
 
 		// IUnknown(Inherited) Method Declarations
 		HRESULT __stdcall QueryInterface(REFIID, void**);
@@ -74,26 +86,42 @@ BOOL WINAPI DllMain(HMODULE hDll, DWORD dwReason, LPVOID lpReserved)
 	return TRUE;
 }
 
-// CSumSubtract Method Implementations
+// Calculator Method Implementations
 //-----------------------------------------------------------------------------------------------------
 
 // Constructor
-CSumSubtract::CSumSubtract(void)
+Calculator::Calculator(void)
 {
 	// Code
 	m_cRef = 1;
+	m_pIMultiply = NULL;
+	m_pIDivide = NULL;
+
 	InterlockedIncrement(&glNumberOfActiveComponents);
 }
 
 // Destructor
-CSumSubtract::~CSumSubtract(void)
+Calculator::~Calculator(void)
 {
 	// Code
 	InterlockedDecrement(&glNumberOfActiveComponents);
+
+	// Safe Release
+	if (m_pIDivide)
+	{
+		m_pIDivide->Release();
+		m_pIDivide = NULL;
+	}
+
+	if (m_pIMultiply)
+	{
+		m_pIMultiply->Release();
+		m_pIMultiply = NULL;
+	}
 }
 
 // Inherited IUnknown Methods
-HRESULT CSumSubtract::QueryInterface(REFIID riid, void** ppv)
+HRESULT Calculator::QueryInterface(REFIID riid, void** ppv)
 {
 	// Code
 	if (riid == IID_IUnknown)
@@ -102,6 +130,10 @@ HRESULT CSumSubtract::QueryInterface(REFIID riid, void** ppv)
 		*ppv = static_cast<ISum*>(this);
 	else if (riid == IID_ISubtract)
 		*ppv = static_cast<ISubtract*>(this);
+	else if (riid == IID_IMultiply)
+		*ppv = static_cast<IMultiply*>(this);
+	else if (riid == IID_IDivide)
+		*ppv = static_cast<IDivide*>(this);
 	else
 	{
 		*ppv = NULL;
@@ -112,14 +144,14 @@ HRESULT CSumSubtract::QueryInterface(REFIID riid, void** ppv)
 	return S_OK;
 }
 
-ULONG CSumSubtract::AddRef(void)
+ULONG Calculator::AddRef(void)
 {
 	// Code
 	InterlockedIncrement(&m_cRef);
 	return m_cRef;
 }
 
-ULONG CSumSubtract::Release(void)
+ULONG Calculator::Release(void)
 {
 	// Code
 	InterlockedDecrement(&m_cRef);
@@ -133,7 +165,7 @@ ULONG CSumSubtract::Release(void)
 }
 
 // ISum's Methods
-HRESULT CSumSubtract::SumOfTwoIntegers(int num1, int num2, int* pSum)
+HRESULT Calculator::SumOfTwoIntegers(int num1, int num2, int* pSum)
 {
 	// Code
 	*pSum = num1 + num2;
@@ -141,32 +173,88 @@ HRESULT CSumSubtract::SumOfTwoIntegers(int num1, int num2, int* pSum)
 }
 
 // ISubtract's Methods
-HRESULT CSumSubtract::SubtractionOfTwoIntegers(int num1, int num2, int* pSubtract)
+HRESULT Calculator::SubtractionOfTwoIntegers(int num1, int num2, int* pSubtract)
 {
 	// Code
 	*pSubtract = num1 - num2;
 	return S_OK;
 }
+
+// IMultiply's Methods
+HRESULT Calculator::MultiplicationOfTwoIntegers(int num1, int num2, int* pMultiplication)
+{
+	// Code
+	m_pIMultiply->MultiplicationOfTwoIntegers(num1, num2, pMultiplication);
+	return S_OK;
+}
+
+// IDivide's Methods
+HRESULT Calculator::DivisionOfTwoIntegers(int num1, int num2, int* pDivision)
+{
+	// Code
+	m_pIDivide->DivisionOfTwoIntegers(num1, num2, pDivision);
+	return S_OK;
+}
+
+HRESULT Calculator::InitializeInnerComponent(void)
+{
+	// Variable Declarations
+	HRESULT hr = S_OK;
+
+	// Code
+	hr = CoCreateInstance(
+			CLSID_MultiplyDivide, 
+			NULL, 
+			CLSCTX_INPROC_SERVER, 
+			IID_IMultiply, 
+			(void**)&m_pIMultiply
+		);
+	if (FAILED(hr))
+	{
+		MessageBox(
+			NULL,
+			TEXT("IMultiply Interface Could Not Be Obtained ... Exiting !!!"),
+			TEXT("COM Error"),
+			MB_OK | MB_ICONERROR
+		);
+		return E_FAIL;
+	}
+
+	hr = m_pIMultiply->QueryInterface(IID_IDivide, (void**)&m_pIDivide);
+	if (FAILED(hr))
+	{
+		MessageBox(
+			NULL,
+			TEXT("IDivide Interface Could Not Be Obtained ... Exiting !!!"),
+			TEXT("COM Error"),
+			MB_OK | MB_ICONERROR
+		);
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
 //-----------------------------------------------------------------------------------------------------
 
-// CSumSubtractClassFactory Method Implementations
+// CalculatorClassFactory Method Implementations
 //-----------------------------------------------------------------------------------------------------
 
 // Constructor
-CSumSubtractClassFactory::CSumSubtractClassFactory(void)
+CalculatorClassFactory::CalculatorClassFactory(void)
 {
 	// Code
 	m_cRef = 1;
 }
 
 // Destructor
-CSumSubtractClassFactory::~CSumSubtractClassFactory(void)
+CalculatorClassFactory::~CalculatorClassFactory(void)
 {
 	// Code
 }
 
 // Inherited IUnknown Methods
-HRESULT CSumSubtractClassFactory::QueryInterface(REFIID riid, void** ppv)
+HRESULT CalculatorClassFactory::QueryInterface(REFIID riid, void** ppv)
 {
 	// Code
 	if (riid == IID_IUnknown)
@@ -183,14 +271,14 @@ HRESULT CSumSubtractClassFactory::QueryInterface(REFIID riid, void** ppv)
 	return S_OK;
 }
 
-ULONG CSumSubtractClassFactory::AddRef(void)
+ULONG CalculatorClassFactory::AddRef(void)
 {
 	// Code
 	InterlockedIncrement(&m_cRef);
 	return m_cRef;
 }
 
-ULONG CSumSubtractClassFactory::Release(void)
+ULONG CalculatorClassFactory::Release(void)
 {
 	// Code
 	InterlockedDecrement(&m_cRef);
@@ -204,27 +292,43 @@ ULONG CSumSubtractClassFactory::Release(void)
 }
 
 // IClassFactory's Method
-HRESULT CSumSubtractClassFactory::CreateInstance(IUnknown* pUnkOuter, REFIID riid, void **ppv)
+HRESULT CalculatorClassFactory::CreateInstance(IUnknown* pUnkOuter, REFIID riid, void **ppv)
 {
 	// Variable Declarations
-	CSumSubtract* pCSumSubtract = NULL;
+	Calculator* pCalculator = NULL;
 	HRESULT hr = S_OK;
 
 	// Code
 	if (pUnkOuter != NULL)
 		return CLASS_E_NOAGGREGATION;
 
-	pCSumSubtract = new CSumSubtract();
-	if (pCSumSubtract == NULL)
+	pCalculator = new Calculator();
+	if (pCalculator == NULL)
 		return E_OUTOFMEMORY;
 
-	hr = pCSumSubtract->QueryInterface(riid, ppv);
-	pCSumSubtract->Release();
+	// Initialize Inner Component
+	hr = pCalculator->InitializeInnerComponent();
+	if (FAILED(hr))
+	{
+		MessageBox(
+			NULL,
+			TEXT("Failed To Initialize Inner Component ... Exiting !!!"),
+			TEXT("COM Error"),
+			MB_ICONERROR | MB_OK
+		);
+
+		pCalculator->Release();
+
+		return hr;
+	}
+
+	hr = pCalculator->QueryInterface(riid, ppv);
+	pCalculator->Release();
 
 	return hr;
 }
 
-HRESULT CSumSubtractClassFactory::LockServer(BOOL fLock)
+HRESULT CalculatorClassFactory::LockServer(BOOL fLock)
 {
 	// Code
 	if (fLock)
@@ -239,19 +343,19 @@ HRESULT CSumSubtractClassFactory::LockServer(BOOL fLock)
 extern "C" HRESULT __stdcall DllGetClassObject(REFCLSID rclsid, REFIID riid, void** ppv)
 {
 	// Variable Declarations
-	CSumSubtractClassFactory* pCSumSubtractClassFactory = NULL;
+	CalculatorClassFactory* pCalculatorClassFactory = NULL;
 	HRESULT hr = S_OK;
 
 	// Code
 	if (rclsid != CLSID_SumSubtract)
 		return CLASS_E_CLASSNOTAVAILABLE;
 
-	pCSumSubtractClassFactory = new CSumSubtractClassFactory();
-	if (pCSumSubtractClassFactory == NULL)
+	pCalculatorClassFactory = new CalculatorClassFactory();
+	if (pCalculatorClassFactory == NULL)
 		return E_OUTOFMEMORY;
 	
-	hr = pCSumSubtractClassFactory->QueryInterface(riid, ppv);
-	pCSumSubtractClassFactory->Release();
+	hr = pCalculatorClassFactory->QueryInterface(riid, ppv);
+	pCalculatorClassFactory->Release();
 
 	return hr;
 }
