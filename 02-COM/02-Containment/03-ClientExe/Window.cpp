@@ -1,6 +1,6 @@
 #include <windows.h>
 #include "Window.h"
-#include "ClassFactoryDllServerWithRegFile.h"
+#include "HeaderForClientOfContainmentWithRegFile.h"
 
 #define WINDOW_WIDTH 	800
 #define WINDOW_HEIGHT	600
@@ -11,6 +11,8 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 // Global Variable Declarations
 ISum* pISum = NULL;
 ISubtract* pISubtract = NULL;
+IMultiply* pIMultiply = NULL;
+IDivide* pIDivide = NULL;
 
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -54,7 +56,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	//* Create Window in Memory
 	hwnd = CreateWindow(
 		szAppName,
-		TEXT("Atharv Natu : COM Class Factory Client"),
+		TEXT("Atharv Natu : COM Containment Client"),
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -112,10 +114,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				MessageBox(hwnd, TEXT("Failed to obtain ISum Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
 				GetErrorMessage(hr);
 				DestroyWindow(hwnd);
-			
+			}
 
-			iNum1 = 55;
-			iNum2 = 45;
+			iNum1 = 10;
+			iNum2 = 5;
 
 			// Addition
 			pISum->SumOfTwoIntegers(iNum1, iNum2, &iResult);
@@ -134,6 +136,33 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			pISubtract->SubtractionOfTwoIntegers(iNum1, iNum2, &iResult);
 			wsprintf(str, TEXT("Subtraction of %d and %d = %d"), iNum1, iNum2, iResult);
 			MessageBox(hwnd, str, TEXT("Subtraction Result"), MB_ICONINFORMATION | MB_OK);
+
+			//* Multiplication
+			hr = pISubtract->QueryInterface(IID_IMultiply, (void**)&pIMultiply);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain IMultiply Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr);
+				DestroyWindow(hwnd);
+			}
+
+			pIMultiply->MultiplicationOfTwoIntegers(iNum1, iNum2, &iResult);
+			wsprintf(str, TEXT("Multiplication of %d and %d = %d"), iNum1, iNum2, iResult);
+			MessageBox(hwnd, str, TEXT("Multiplication Result"), MB_ICONINFORMATION | MB_OK);
+
+			//* Division
+			hr = pIMultiply->QueryInterface(IID_IDivide, (void**)&pIDivide);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain IDivide Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr);
+				DestroyWindow(hwnd);
+			}
+
+			pIDivide->DivisionOfTwoIntegers(iNum1, iNum2, &iResult);
+			wsprintf(str, TEXT("Division of %d and %d = %d"), iNum1, iNum2, iResult);
+			MessageBox(hwnd, str, TEXT("Division Result"), MB_ICONINFORMATION | MB_OK);
+
 
 			DestroyWindow(hwnd);
 
@@ -180,6 +209,18 @@ void GetErrorMessage(HRESULT hr)
 void SafeInterfaceRelease(void)
 {
 	// Code
+	if (pIDivide)
+	{
+		pIDivide->Release();
+		pIDivide = NULL;
+	}
+
+	if (pIMultiply)
+	{
+		pIMultiply->Release();
+		pIMultiply = NULL;
+	}
+
 	if (pISubtract)
 	{
 		pISubtract->Release();

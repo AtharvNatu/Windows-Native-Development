@@ -1,5 +1,5 @@
 Windows Registry Editor Version 5.00
 [HKEY_CLASSES_ROOT\CLSID\{95A50990-1617-4C1E-8462-47A523891FF3}]
-@="MyClassFactoryDLL"
+@="ADN_ClassFactory"
 [HKEY_CLASSES_ROOT\CLSID\{95A50990-1617-4C1E-8462-47A523891FF3}\InProcServer32]
 @="C:\\Windows\\System32\\ClassFactoryDllServerWithRegFile.dll"

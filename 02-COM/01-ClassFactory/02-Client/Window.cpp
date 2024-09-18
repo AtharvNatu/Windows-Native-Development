@@ -112,7 +112,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				MessageBox(hwnd, TEXT("Failed to obtain ISum Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
 				GetErrorMessage(hr);
 				DestroyWindow(hwnd);
-			
+			}
 
 			iNum1 = 55;
 			iNum2 = 45;
