@@ -1,0 +1,5 @@
+Windows Registry Editor Version 5.00
+[HKEY_CLASSES_ROOT\CLSID\{654D2D38-73B6-44E5-9F15-BF3B883C1A08}]
+@="ADN_AggregationInnerComponentDLL"
+[HKEY_CLASSES_ROOT\CLSID\{654D2D38-73B6-44E5-9F15-BF3B883C1A08}\InProcServer32]
+@="C:\\Windows\\System32\\AggregationInnerComponentWithRegFile.dll"
