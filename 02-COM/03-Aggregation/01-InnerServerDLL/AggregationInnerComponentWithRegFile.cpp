@@ -23,7 +23,7 @@ class CMultiplyDivide :public INoAggregationIUnknown, IMultiply, IDivide
 		CMultiplyDivide(IUnknown*);
 		~CMultiplyDivide(void);
 
-		// Aggregation Non-Supported IUnkown Method Declarations
+		// Aggregation Non-Supported IUnknown Method Declarations
 		HRESULT __stdcall QueryInterface_NoAggregation(REFIID, void**);
 		ULONG __stdcall AddRef_NoAggregation(void);
 		ULONG __stdcall Release_NoAggregation(void);
@@ -113,7 +113,7 @@ CMultiplyDivide::~CMultiplyDivide(void)
 	InterlockedDecrement(&glNumberOfActiveComponents);
 }
 
-// Aggregation Non-Supported IUnkown Methods
+// Aggregation Non-Supported IUnknown Methods
 HRESULT CMultiplyDivide::QueryInterface_NoAggregation(REFIID riid, void** ppv)
 {
 	// Code

@@ -174,10 +174,10 @@ HRESULT Calculator::InitializeInnerComponent(void)
 	// Code
 	hr = CoCreateInstance(
 			CLSID_MultiplyDivide, 
-			reinterpret_cast<IUnknown*>(this),
+			reinterpret_cast<IUnknown*>(this),	//* (this) points to the instance of Outer Component's CoClass and typecasted to IUnknown of the Outer Component
 			CLSCTX_INPROC_SERVER, 
 			IID_IUnknown, 
-			(void**)&m_pIUnknownInner
+			(void**)&m_pIUnknownInner	//* Asking for IUnknown from Inner Component, but gets INoAggregationIUnknown
 		);
 	if (FAILED(hr))
 	{
