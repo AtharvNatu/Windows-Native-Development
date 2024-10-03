@@ -1,6 +1,6 @@
 #include <windows.h>
 #include "Window.h"
-#include "HeaderForClientOfContainmentWithRegFile.h"
+#include "HeaderForClientOfAggregationWithRegFile.h"
 
 #define WINDOW_WIDTH 	800
 #define WINDOW_HEIGHT	600
@@ -56,7 +56,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	//* Create Window in Memory
 	hwnd = CreateWindow(
 		szAppName,
-		TEXT("Atharv Natu : COM Containment Client"),
+		TEXT("Atharv Natu : COM Aggregation Client"),
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -162,7 +162,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			pIDivide->DivisionOfTwoIntegers(iNum1, iNum2, &iResult);
 			wsprintf(str, TEXT("Division of %d and %d = %d"), iNum1, iNum2, iResult);
 			MessageBox(hwnd, str, TEXT("Division Result"), MB_ICONINFORMATION | MB_OK);
-
 
 			DestroyWindow(hwnd);
 
