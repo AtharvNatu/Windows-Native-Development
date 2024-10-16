@@ -154,7 +154,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 void GetErrorMessage(HRESULT hr)
 {
-	// Variable Declarationss
+	// Variable Declarations
 	LPVOID buffer;
 
 	// Code

@@ -151,6 +151,59 @@ ULONG CMyMath::Release(void)
 	return m_cRef;
 }
 
+// Inherited IDispatch Methods
+HRESULT CMyMath::GetTypeInfoCount(UINT * pCountTypeInfo)
+{
+	// Code
+	*pCountTypeInfo = 1;	// Because we have a type library (TLB)
+	return S_OK;
+}
+
+HRESULT CMyMath::GetTypeInfo(UINT indexOfTypeInfo, LCID lcid, ITypeInfo** ppITypeInfo)
+{
+	// Code
+	*ppITypeInfo = NULL;
+
+	if (indexOfTypeInfo != 0)
+		return DISP_E_BADINDEX;
+
+	m_pITypeInfo->AddRef();
+
+	*ppITypeInfo = m_pITypeInfo;
+
+	return S_OK;
+}
+
+HRESULT CMyMath::GetIDsOfNames(REFIID riid, LPOLESTR* rgszNames, UINT cNames, LCID lcid, DISPID* rgDispId)
+{
+	// Code
+	return DispGetIDsOfNames(
+		m_pITypeInfo,
+		rgszNames,
+		cNames,
+		rgDispId
+	);
+}
+
+HRESULT CMyMath::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, UINT* puArgErr)
+{
+	// Code
+	HRESULT hr = S_OK;
+
+	hr = DispInvoke(
+		this,
+		m_pITypeInfo,
+		dispIdMember,
+		wFlags,
+		pDispParams,
+		pVarResult,
+		pExcepInfo,
+		puArgErr
+	);
+
+	return hr;
+}
+
 // IMyMath's Methods
 HRESULT CMyMath::SumOfTwoIntegers(int num1, int num2, int* pSum)
 {
@@ -166,8 +219,46 @@ HRESULT CMyMath::SubtractionOfTwoIntegers(int num1, int num2, int* pSubtract)
 	return S_OK;
 }
 
+HRESULT CMyMath::InitInstance(void)
+{
+	// Function Declarations
+	void ComErrorDescriptionString(HWND, HRESULT);
 
+	// Variable Declarations
+	HRESULT hr;
+	ITypeLib* pITypeLib = NULL;
 
+	// Code
+	if (m_pITypeInfo == NULL)
+	{
+		hr = LoadRegTypeLib(
+			LIBID_AutomationServer,
+			1,	// Major version
+			0,	// Minor version
+			0x00,
+			&pITypeLib
+		);
+
+		if (FAILED(hr))
+		{
+			ComErrorDescriptionString(NULL, hr);
+			return hr;
+		}
+
+		hr = pITypeLib->GetTypeInfoOfGuid(IID_IMyMath, &m_pITypeInfo);
+
+		if (FAILED(hr))
+		{
+			ComErrorDescriptionString(NULL, hr);
+			pITypeLib->Release();
+			return hr;
+		}
+
+		pITypeLib->Release();
+	}
+
+	return S_OK;
+}
 //-----------------------------------------------------------------------------------------------------
 
 // CMyMathClassFactory Method Implementations
@@ -288,4 +379,31 @@ extern "C" HRESULT __stdcall DllCanUnloadNow(void)
 	else
 		return S_FALSE;
 }
+
+void ComErrorDescriptionString(HWND hwnd, HRESULT hr)
+{
+	// Code
+	// Variable Declarationss
+	LPVOID buffer;
+
+	// Code
+	DWORD dw = FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		hr,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPSTR)&buffer,
+		0,
+		NULL
+	);
+
+	if (dw != 0)
+	{
+		MessageBox(NULL, (LPCTSTR)buffer, TEXT("COM Error"), MB_ICONERROR | MB_OK);
+		LocalFree(buffer);
+	}
+	else
+		MessageBox(NULL, TEXT("Unknown Error Code !!!"), TEXT("Unknown Error"), MB_ICONERROR | MB_OK);
+}
+
 //-----------------------------------------------------------------------------------------------------
