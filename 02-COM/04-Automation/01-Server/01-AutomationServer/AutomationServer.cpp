@@ -2,6 +2,11 @@
 #include <stdio.h>
 #include "AutomationServer.h"
 
+//#ifndef UNICODE
+//	#define UNICODE
+//#endif // !UNICODE
+
+
 // Class Declarations
 class CMyMath : public IMyMath
 {
@@ -382,28 +387,34 @@ extern "C" HRESULT __stdcall DllCanUnloadNow(void)
 
 void ComErrorDescriptionString(HWND hwnd, HRESULT hr)
 {
-	// Code
 	// Variable Declarationss
-	LPVOID buffer;
+	TCHAR* szErrorMsg = NULL;
+	TCHAR str[255];
 
 	// Code
-	DWORD dw = FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		hr,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPSTR)&buffer,
-		0,
-		NULL
-	);
-
-	if (dw != 0)
+	if (FACILITY_WINDOWS == HRESULT_FACILITY(hr))
 	{
-		MessageBox(NULL, (LPCTSTR)buffer, TEXT("COM Error"), MB_ICONERROR | MB_OK);
-		LocalFree(buffer);
+		hr = HRESULT_CODE(hr);
+
+		if (FormatMessage(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+			NULL,
+			hr,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			(LPTSTR)&szErrorMsg,
+			0,
+			NULL
+		) != 0)
+		{
+			sprintf_s(str, TEXT("%#x : %s"), hr, szErrorMsg);
+			LocalFree(szErrorMsg);
+			szErrorMsg = NULL;
+		}
+		else
+			sprintf_s(str, TEXT("Unable to find description for error # %#x !!!\n"), hr);
+
+		MessageBox(hwnd, str, TEXT("COM Error"), MB_ICONERROR | MB_OK);
 	}
-	else
-		MessageBox(NULL, TEXT("Unknown Error Code !!!"), TEXT("Unknown Error"), MB_ICONERROR | MB_OK);
 }
 
 //-----------------------------------------------------------------------------------------------------
