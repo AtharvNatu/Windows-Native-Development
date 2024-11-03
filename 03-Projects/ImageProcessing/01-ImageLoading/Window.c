@@ -101,7 +101,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				hdcMem = CreateCompatibleDC(hdc);
 				SelectObject(hdcMem, hBitmap);
 				GetObject(hBitmap, sizeof(BITMAP), &bitmap);
-				StretchBlt(hdc, 0, 0, bitmap.bmWidth, bitmap.bmHeight, hdcMem, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SRCCOPY);
+				StretchBlt(
+					hdc, 
+					0, 
+					0, 
+					bitmap.bmWidth,
+					bitmap.bmHeight, 
+					hdcMem, 
+					0, 
+					0, 
+					WINDOW_WIDTH, 
+					WINDOW_HEIGHT, 
+					SRCCOPY
+				);
 				DeleteDC(hdcMem);
 			}
 			EndPaint(hwnd, &ps);
@@ -117,6 +129,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			PostQuitMessage(0);
+
 		break;
 
 		default:
