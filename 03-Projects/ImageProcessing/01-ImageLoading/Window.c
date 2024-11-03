@@ -69,9 +69,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	// Variable Declarations
 	HDC hdc = NULL;
+
 	static HBITMAP hBitmap = NULL;
 	static BITMAP bitmap;
-
 	static PAINTSTRUCT ps;
 
 	// Code
