@@ -1,0 +1,4 @@
+#include "Window.h"
+
+ADN_ICON    ICON    Arch.ico
+ADN_BITMAP  BITMAP  Arch.bmp

@@ -67,7 +67,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
-<<<<<<< HEAD
 	// Variable Declarations
 	HDC hdc = NULL;
 
@@ -75,14 +74,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	static RECT rect;
 	TCHAR str[] = TEXT("Hello World From WinDev-2024 !");
 
-=======
->>>>>>> 1f0322a1b94ad0f1e8da39ff50e10e9a1141ac45
 	// Code
 	switch (iMsg)
 	{
 		//* Message Handlers
 		case WM_CREATE:
-<<<<<<< HEAD
 			ZeroMemory((void*)&ps, sizeof(PAINTSTRUCT));
 			ZeroMemory((void*)&rect, sizeof(rect));
 		break;
@@ -94,12 +90,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			SetTextColor(hdc, RGB(0, 255, 0));
 			DrawText(hdc, str, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 			EndPaint(hwnd, &ps);
-=======
-		break;
-
-		case WM_PAINT:
-			
->>>>>>> 1f0322a1b94ad0f1e8da39ff50e10e9a1141ac45
 		break;
 
 		case WM_DESTROY:
