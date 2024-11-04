@@ -2,11 +2,6 @@
 #include <stdio.h>
 #include "AutomationServer.h"
 
-//#ifndef UNICODE
-//	#define UNICODE
-//#endif // !UNICODE
-
-
 // Class Declarations
 class CMyMath : public IMyMath
 {
@@ -35,7 +30,7 @@ class CMyMath : public IMyMath
 		HRESULT __stdcall SubtractionOfTwoIntegers(int, int, int*);
 
 		// Custom Method Declarations
-		HRESULT InitInstance(void);
+		HRESULT InitTypeLibrary(void);
 };
 
 class CMyMathClassFactory :public IClassFactory
@@ -224,7 +219,7 @@ HRESULT CMyMath::SubtractionOfTwoIntegers(int num1, int num2, int* pSubtract)
 	return S_OK;
 }
 
-HRESULT CMyMath::InitInstance(void)
+HRESULT CMyMath::InitTypeLibrary(void)
 {
 	// Function Declarations
 	void ComErrorDescriptionString(HWND, HRESULT);
@@ -251,15 +246,16 @@ HRESULT CMyMath::InitInstance(void)
 		}
 
 		hr = pITypeLib->GetTypeInfoOfGuid(IID_IMyMath, &m_pITypeInfo);
-
 		if (FAILED(hr))
 		{
 			ComErrorDescriptionString(NULL, hr);
 			pITypeLib->Release();
+			pITypeLib = NULL;
 			return hr;
 		}
 
 		pITypeLib->Release();
+		pITypeLib = NULL;
 	}
 
 	return S_OK;
@@ -323,6 +319,9 @@ ULONG CMyMathClassFactory::Release(void)
 // IClassFactory's Method
 HRESULT CMyMathClassFactory::CreateInstance(IUnknown* pUnkOuter, REFIID riid, void **ppv)
 {
+	// Function Declarations
+	void ComErrorDescriptionString(HWND, HRESULT);
+
 	// Variable Declarations
 	CMyMath* pCMyMath = NULL;
 	HRESULT hr = S_OK;
@@ -335,7 +334,12 @@ HRESULT CMyMathClassFactory::CreateInstance(IUnknown* pUnkOuter, REFIID riid, vo
 	if (pCMyMath == NULL)
 		return E_OUTOFMEMORY;
 
-	pCMyMath->InitInstance();
+	hr = pCMyMath->InitTypeLibrary();
+	if (FAILED(hr))
+	{
+		ComErrorDescriptionString(NULL, hr);
+		return hr;
+	}
 
 	hr = pCMyMath->QueryInterface(riid, ppv);
 
@@ -406,12 +410,12 @@ void ComErrorDescriptionString(HWND hwnd, HRESULT hr)
 			NULL
 		) != 0)
 		{
-			sprintf_s(str, TEXT("%#x : %s"), hr, szErrorMsg);
+			swprintf_s(str, TEXT("%#x : %s"), hr, szErrorMsg);
 			LocalFree(szErrorMsg);
 			szErrorMsg = NULL;
 		}
 		else
-			sprintf_s(str, TEXT("Unable to find description for error # %#x !!!\n"), hr);
+			swprintf_s(str, TEXT("Unable to find description for error # %#x !!!\n"), hr);
 
 		MessageBox(hwnd, str, TEXT("COM Error"), MB_ICONERROR | MB_OK);
 	}
