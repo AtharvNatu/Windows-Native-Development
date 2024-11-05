@@ -57,7 +57,7 @@ class CMyMathClassFactory :public IClassFactory
 long glNumberOfActiveComponents = 0;
 long glNumberofServerLocks = 0;
 
-//  GUID of LIBID_AutomationServer ->{CD57FC48-EDEC-476D-8DE4-A22255E05860}
+//  GUID of LIBID_AutomationServer -> {CD57FC48-EDEC-476D-8DE4-A22255E05860}
 const GUID LIBID_AutomationServer =
 { 0xcd57fc48, 0xedec, 0x476d, 0x8d, 0xe4, 0xa2, 0x22, 0x55, 0xe0, 0x58, 0x60 };
 
