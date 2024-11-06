@@ -1,0 +1,31 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\CLSID\{CSLID}]
+@="ADN_Automation_DLL"
+
+[HKEY_CLASSES_ROOT\CLSID\{CSLID}\InprocServer32]
+@="C:\\Windows\\System32\\<Automation Server DLL File>.dll"
+
+[HKEY_CLASSES_ROOT\CLSID\{CLSID}\Typelib]
+@="{LIBID}"
+
+[HKEY_CLASSES_ROOT\Typelib\{LIBID}]
+@="ADN_Automation_Type_Library"
+
+[HKEY_CLASSES_ROOT\Typelib\{LIBID}\1.0]
+@="ADN_Automation_Type_Library v1.0"
+
+[HKEY_CLASSES_ROOT\Typelib\{LIBID}\1.0\0\win32]
+@="C:\\Windows\\System32\\<Automation Type Library File>.tlb"
+
+[HKEY_CLASSES_ROOT\Interface\{IID}]
+@="Interface Name"
+
+[HKEY_CLASSES_ROOT\Interface\{IID}\TypeLib]
+@="{LIBID}"
+
+[HKEY_CLASSES_ROOT\Interface\{IID}\ProxyStubClsid32]
+@="{00020424-0000-0000-C000-000000000046}"
+
+[HKEY_CLASSES_ROOT\Interface\{IID}\ProxyStubClsid]
+@="{00020424-0000-0000-C000-000000000046}"
