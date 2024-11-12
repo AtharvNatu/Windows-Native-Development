@@ -367,7 +367,7 @@ extern "C" HRESULT __stdcall DllGetClassObject(REFCLSID rclsid, REFIID riid, voi
 	HRESULT hr = S_OK;
 
 	// Code
-	if (rclsid != CLSID_SumSubtract)
+	if (rclsid != CLSID_MyMath)
 		return CLASS_E_CLASSNOTAVAILABLE;
 
 	pCSumSubtractClassFactory = new CMyMathClassFactory();
