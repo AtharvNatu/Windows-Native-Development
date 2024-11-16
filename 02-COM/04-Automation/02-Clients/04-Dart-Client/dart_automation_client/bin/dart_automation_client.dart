@@ -9,7 +9,7 @@ void main() {
   stdout.write("\nEnter Number 2 = ");
   int? num2 = int.parse(stdin.readLineSync()!);
 
-  var (sum, subtraction) = getResult(num1, num2);
+  var (sum, subtraction) = calculateResult(num1, num2);
 
   print("\nAddition of $num1 and $num2 = $sum");
   print("\nSubtraction of $num1 and $num2 = $subtraction");
