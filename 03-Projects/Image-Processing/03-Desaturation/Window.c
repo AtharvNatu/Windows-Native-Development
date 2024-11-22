@@ -100,8 +100,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			hdc = BeginPaint(hwnd, &ps);
 			{
 				hdcMem = CreateCompatibleDC(hdc);
+				GetObject(hBitmap, sizeof(BITMAP), &bitmap);
 				SelectObject(hdcMem, hBitmap);
-				SetStretchBltMode(hdcMem, COLORONCOLOR);
+				SetStretchBltMode(hdc, COLORONCOLOR);
 				StretchBlt(
 					hdc, 
 					0, 
@@ -111,8 +112,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					hdcMem, 
 					0, 
 					0, 
-					resizedWindowWidth,
-					resizedWindowHeight,
+					bitmap.bmWidth,
+					bitmap.bmHeight,
 					SRCCOPY
 				);
 
@@ -142,9 +143,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					}
 				}
 
-				DeleteDC(hdcMem);
+				if (hdcMem)
+				{
+					DeleteDC(hdcMem);
+					hdcMem = NULL;
+				}
+				
 			}
-			EndPaint(hwnd, &ps);
+			if (hdc)
+			{
+				EndPaint(hwnd, &ps);
+				hdc = NULL;
+			}
+			
 		break;
 
 		case WM_SIZE:
@@ -156,7 +167,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			switch (LOWORD(wParam))
 			{
 				case VK_SPACE:
-					bSpaceKeyPressed = !bSpaceKeyPressed;
+					bSpaceKeyPressed = TRUE;
 					InvalidateRect(hwnd, NULL, TRUE);
 				break;
 
