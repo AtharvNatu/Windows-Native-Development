@@ -73,6 +73,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	static HBITMAP hBitmap = NULL;
 	static BITMAP bitmap;
 	static PAINTSTRUCT ps;
+	static unsigned int resizedWindowWidth = 0, resizedWindowHeight = 0;
 
 	// Code
 	switch (iMsg)
@@ -85,7 +86,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			hBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(ADN_BITMAP));
 			if (hBitmap == NULL)
 			{
-				MessageBox(hwnd, TEXT("Failed to Load Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+				MessageBox(hwnd, TEXT("Failed To Load Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
 				DestroyWindow(hwnd);
 			}	
 
@@ -99,37 +100,50 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			hdc = BeginPaint(hwnd, &ps);
 			{
 				hdcMem = CreateCompatibleDC(hdc);
-				SelectObject(hdcMem, hBitmap);
 				GetObject(hBitmap, sizeof(BITMAP), &bitmap);
+				SelectObject(hdcMem, hBitmap);
+				SetStretchBltMode(hdc, COLORONCOLOR);
 				StretchBlt(
-					hdc, 
-					0, 
-					0, 
+					hdc,
+					0,
+					0,
+					resizedWindowWidth,
+					resizedWindowHeight,
+					hdcMem,
+					0,
+					0,
 					bitmap.bmWidth,
-					bitmap.bmHeight, 
-					hdcMem, 
-					0, 
-					0, 
-					WINDOW_WIDTH, 
-					WINDOW_HEIGHT, 
+					bitmap.bmHeight,
 					SRCCOPY
 				);
-				DeleteDC(hdcMem);
+
+				if (hdcMem)
+				{
+					DeleteDC(hdcMem);
+					hdcMem = NULL;
+				}
+
 			}
-			EndPaint(hwnd, &ps);
+			if (hdc)
+			{
+				EndPaint(hwnd, &ps);
+				hdc = NULL;
+			}
 
 		break;
 
-		case WM_DESTROY:
+		case WM_SIZE:
+			resizedWindowWidth = LOWORD(lParam);
+			resizedWindowHeight = HIWORD(lParam);
+		break;
 
+		case WM_DESTROY:
 			if (hBitmap)
 			{
 				DeleteObject(hBitmap);
 				hBitmap = NULL;
 			}
-
 			PostQuitMessage(0);
-
 		break;
 
 		default:
