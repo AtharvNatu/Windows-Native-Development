@@ -117,7 +117,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					SRCCOPY
 				);
 
-				// Pixel-by-pixel desaturation
 				if (bSpaceKeyPressed)
 				{
 					for (int yRow = 0; yRow < resizedWindowHeight; yRow++)

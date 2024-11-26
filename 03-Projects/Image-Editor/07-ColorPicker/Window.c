@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <windowsx.h>
 #include <stdio.h>
 #include "Window.h"
 
@@ -78,7 +79,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	static PAINTSTRUCT ps;
 
 	static unsigned int resizedWindowWidth = 0, resizedWindowHeight = 0;
-	static BOOL bSpaceKeyPressed = FALSE;
+	static unsigned int pickedPixelX = 0, pickedPixelY = 0;
+	static BOOL bColorPickerLeftClick = FALSE;
 
 	// Code
 	switch (iMsg)
@@ -137,39 +139,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					SRCCOPY
 				);
 
-				// Pixel-by-pixel desaturation
-				if (bSpaceKeyPressed)
+				if (bColorPickerLeftClick)
 				{
-					for (int yRow = 0; yRow < resizedWindowHeight; yRow++)
-					{
-						for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
-						{
-							// Get color from the pixel at co-ordinate (X-Column,Y-Row)
-							COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-
-							unsigned int originalR = GetRValue(originalPixelColor);
-							unsigned int originalG = GetGValue(originalPixelColor);
-							unsigned int originalB = GetBValue(originalPixelColor);
-
-							unsigned int negativeR = 255 - originalR;
-							if (negativeR < 0)
-								negativeR = 0;
-							
-							unsigned int negativeG = 255 - originalG;
-							if (negativeG < 0)
-								negativeG = 0;
-
-							unsigned int negativeB = 255 - originalB;
-							if (negativeB < 0)
-								negativeB = 0;
-
-							COLORREF negativePixelColor = RGB(negativeR, negativeG, negativeB);
-
-							SetPixel(hdc, xColumn, yRow, negativePixelColor);
-						}
-					}
+					COLORREF pickedPixel = GetPixel(hdc, pickedPixelX, pickedPixelY);
+					fprintf(gpFile_ColorPickerLog, "R : %u, G : %u, B : %u\n", GetRValue(pickedPixel), GetGValue(pickedPixel), GetBValue(pickedPixel));
+					bColorPickerLeftClick = FALSE;
 				}
-
+				
 				if (hdcMem)
 				{
 					DeleteDC(hdcMem);
@@ -185,22 +161,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			
 		break;
 
+		case WM_LBUTTONDOWN:
+			
+			//! For Color Picking
+			bColorPickerLeftClick = TRUE;
+			pickedPixelX = GET_X_LPARAM(lParam);
+			pickedPixelY = GET_Y_LPARAM(lParam);
+			InvalidateRect(hwnd, NULL, TRUE);
+
+		break;
+
 		case WM_SIZE:
 			resizedWindowWidth = LOWORD(lParam);
 			resizedWindowHeight = HIWORD(lParam);
-		break;
-
-		case WM_KEYDOWN:
-			switch (LOWORD(wParam))
-			{
-				case VK_SPACE:
-					bSpaceKeyPressed = TRUE;
-					InvalidateRect(hwnd, NULL, TRUE);
-				break;
-
-				default:
-				break;
-			}
 		break;
 
 		case WM_DESTROY:
