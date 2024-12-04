@@ -1,0 +1,11 @@
+#include <windows.h>
+#include "Window.h"
+
+DLG_CONTROLS DIALOG 100, 100, 300, 150
+STYLE DS_MODALFRAME | DS_CENTER | WS_CAPTION
+CAPTION "Image Editor Controls"
+BEGIN
+    PUSHBUTTON "Ok", IDOK, 140, 115, 25, 10
+END
+
+
