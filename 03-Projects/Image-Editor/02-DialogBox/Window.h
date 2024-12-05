@@ -1,4 +1,6 @@
 #pragma once
 
-#define ADN_ICON        101
-#define CONTROLS_DLG    102
+#define ADN_ICON   101
+#define IE_DLG    102
+
+

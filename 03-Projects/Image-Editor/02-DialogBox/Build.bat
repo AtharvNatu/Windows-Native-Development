@@ -16,14 +16,13 @@ echo ---------------------------------------------------------------------------
 echo Compiling Resource Files ...
 echo ----------------------------------------------------------------------------------------------------------------
 rc.exe Window.rc
-rc.exe ControlsDialog.rc
 
 @echo:
 echo ----------------------------------------------------------------------------------------------------------------
 echo Linking Libraries and Resources...
 echo Creating Executable...
 echo ----------------------------------------------------------------------------------------------------------------
-link.exe Window.obj Window.res ControlsDialog.res user32.lib gdi32.lib /SUBSYSTEM:WINDOWS
+link.exe Window.obj Window.res user32.lib gdi32.lib /SUBSYSTEM:WINDOWS
 
 @echo:
 echo ----------------------------------------------------------------------------------------------------------------

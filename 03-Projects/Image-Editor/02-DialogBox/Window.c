@@ -8,6 +8,10 @@
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
 
+//* Global Variable Declarations
+BOOL bOkPressed = FALSE;
+BOOL bCancelPressed = FALSE;
+
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
 {
@@ -70,26 +74,57 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	//*Variable Declarations
 	HINSTANCE hInst = NULL;
+	HDC hdc = NULL;
+
+	PAINTSTRUCT ps;
+	RECT rc;
 
 	// Code
 	switch (iMsg)
 	{
 		//* Message Handlers
 		case WM_CREATE:
+			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
 			hInst = (HINSTANCE)((LPCREATESTRUCT)lParam)->hInstance;
+		break;
+
+		case WM_PAINT:
+			GetClientRect(hwnd, &rc);
+			hdc = BeginPaint(hwnd, &ps);
+			{
+				SetBkColor(hdc, RGB(0, 0, 0));
+
+				if (bOkPressed)
+				{
+					SetTextColor(hdc, RGB(0, 255, 0));
+					DrawText(hdc, "Ok Button Pressed", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+				}
+
+				if (bCancelPressed)
+				{
+					SetTextColor(hdc, RGB(255, 0, 0));
+					DrawText(hdc, "Cancel Button Pressed", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+				}
+				
+			}
+			if (hdc)
+			{
+				EndPaint(hwnd, &ps);
+				hdc = NULL;
+			}
 		break;
 
 		case WM_KEYDOWN:
 			switch(LOWORD(wParam))
 			{
 				case VK_SPACE:
-					// MessageBox(hwnd, TEXT("Sample"), TEXT("Test"), MB_OK);
-					DialogBox(hInst,"Image Editor Controls", hwnd, ControlsDialogProc);
+					DialogBox(hInst, MAKEINTRESOURCE(IE_DLG), hwnd, ControlsDialogProc);
 				break;
 			}
 		break;
 
 		case WM_DESTROY:
+			hInst = NULL;
 			PostQuitMessage(0);
 		break;
 
@@ -103,6 +138,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
+	//*Variable Declarations
+	HWND hwndParent;
+	RECT rc;
+
 	// Code
 	switch(iMsg)
 	{
@@ -113,10 +152,25 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			switch(LOWORD(wParam))
 			{
 				case IDOK:
-					EndDialog(hDlg, LOWORD(wParam));
+					bOkPressed = TRUE;
+					bCancelPressed = FALSE;
+					InvalidateRect(GetParent(hDlg), NULL, TRUE);
+				break;
+
+				case IDCANCEL:
+					bCancelPressed = TRUE;
+					bOkPressed = FALSE;
+					InvalidateRect(GetParent(hDlg), NULL, TRUE);
 				break;
 			}
 		return (INT_PTR)TRUE;
+
+		case WM_CLOSE:
+			EndDialog(hDlg, (INT_PTR)0);
+		break;
+
+		default:
+			return (INT_PTR)FALSE;
 	}
 
 	return (INT_PTR)FALSE;
