@@ -7,6 +7,7 @@
 //* Global Callback Declaration
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
 
 //* Global Function Declarations
 OPENFILENAME OpenFileDialog(HWND hwndOwner);
@@ -45,8 +46,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		szAppName,
 		TEXT("Atharv Natu : Menu Options"),
 		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
+		0,
+		0,
 		WINDOW_WIDTH,
 		WINDOW_HEIGHT,
 		NULL,
@@ -165,7 +166,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							hBitmap = NULL;
 						}
 					}
-					
+
 					hBitmap = (HBITMAP)LoadImage(NULL, szImagePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
 					if (hBitmap == NULL)
 					{
@@ -187,6 +188,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				break;
 
 				case IDM_ABOUT:
+					DialogBox(hInst, MAKEINTRESOURCE(ABOUT_DLG), hwnd, AboutDialogProc);
 				break;
 			}
 		break;
@@ -227,12 +229,48 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		case WM_COMMAND:
 			switch(LOWORD(wParam))
 			{
-				case IDOK:
-				case IDCANCEL:
+				case ID_OK:
+				case ID_EXIT:
 					EndDialog(hDlg, (INT_PTR)0);
 				break;
 			}
 		return (INT_PTR)TRUE;
+
+		case WM_CLOSE:
+			EndDialog(hDlg, (INT_PTR)0);
+		break;
+
+		default:
+			return (INT_PTR)FALSE;
+	}
+
+	return (INT_PTR)FALSE;
+}
+
+INT_PTR CALLBACK AboutDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
+{
+	//*Variable Declarations
+	HWND hwndParent;
+	RECT rc;
+
+	// Code
+	switch(iMsg)
+	{
+		case WM_INITDIALOG:
+			return (INT_PTR)TRUE;
+
+		case WM_COMMAND:
+			switch(LOWORD(wParam))
+			{
+				case ID_OK:
+				case ID_EXIT:
+					EndDialog(hDlg, (INT_PTR)0);
+				break;
+			}
+		return (INT_PTR)TRUE;
+
+		case WM_CTLCOLORDLG:
+			return (INT_PTR)GetStockObject(BLACK_BRUSH);
 
 		case WM_CLOSE:
 			EndDialog(hDlg, (INT_PTR)0);
