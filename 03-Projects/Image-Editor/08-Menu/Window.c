@@ -12,6 +12,9 @@ INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
 //* Global Function Declarations
 OPENFILENAME OpenFileDialog(HWND hwndOwner);
 
+//* Global Variables
+HINSTANCE ghInstance = NULL;
+
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
 {
@@ -37,6 +40,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
 	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
 	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+
+	ghInstance = hInstance;
 
 	//* Register the above created class
 	RegisterClassEx(&wndclass);
@@ -77,7 +82,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 
 	HDC hdc = NULL;
-	HINSTANCE hInst = NULL;
 
 	static HBITMAP hBitmap = NULL;
 	static BOOL bImageLoaded = FALSE;
@@ -89,7 +93,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	{
 		//* Message Handlers
 		case WM_CREATE:
-			hInst = (HINSTANCE)((LPCREATESTRUCT)lParam)->hInstance;
 			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
 		break;
 
@@ -184,11 +187,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				break;
 
 				case IDM_EDIT:
-					DialogBox(hInst, MAKEINTRESOURCE(IE_DLG), hwnd, ControlsDialogProc);
+					DialogBox(ghInstance, MAKEINTRESOURCE(IE_DLG), hwnd, ControlsDialogProc);
 				break;
 
 				case IDM_ABOUT:
-					DialogBox(hInst, MAKEINTRESOURCE(ABOUT_DLG), hwnd, AboutDialogProc);
+					DialogBox(ghInstance, MAKEINTRESOURCE(ABOUT_DLG), hwnd, AboutDialogProc);
 				break;
 			}
 		break;
@@ -216,10 +219,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
-	//*Variable Declarations
-	HWND hwndParent;
-	RECT rc;
-
 	// Code
 	switch(iMsg)
 	{
@@ -229,6 +228,10 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		case WM_COMMAND:
 			switch(LOWORD(wParam))
 			{
+				case ID_ABOUT:
+					DialogBox(ghInstance, MAKEINTRESOURCE(ABOUT_DLG), hDlg, AboutDialogProc);
+				break;
+
 				case ID_OK:
 				case ID_EXIT:
 					EndDialog(hDlg, (INT_PTR)0);
@@ -250,8 +253,8 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 INT_PTR CALLBACK AboutDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	//*Variable Declarations
-	HWND hwndParent;
-	RECT rc;
+	HDC hdc;
+	static HBRUSH hBrush = NULL;
 
 	// Code
 	switch(iMsg)
@@ -263,7 +266,11 @@ INT_PTR CALLBACK AboutDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lPa
 			switch(LOWORD(wParam))
 			{
 				case ID_OK:
-				case ID_EXIT:
+					if (hBrush)
+					{
+						DeleteObject(hBrush);
+						hBrush = NULL;
+					}
 					EndDialog(hDlg, (INT_PTR)0);
 				break;
 			}
@@ -272,7 +279,22 @@ INT_PTR CALLBACK AboutDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lPa
 		case WM_CTLCOLORDLG:
 			return (INT_PTR)GetStockObject(BLACK_BRUSH);
 
+		case WM_CTLCOLORSTATIC:
+			hdc = (HDC)wParam;
+			SetTextColor(hdc, RGB(30, 144, 255));
+			SetBkColor(hdc, RGB(0, 0, 0));
+			if (hBrush == NULL)
+			{
+				hBrush = CreateSolidBrush(RGB(0, 0, 0));
+			}
+		return (INT_PTR)hBrush;
+
 		case WM_CLOSE:
+			if (hBrush)
+			{
+				DeleteObject(hBrush);
+				hBrush = NULL;
+			}
 			EndDialog(hDlg, (INT_PTR)0);
 		break;
 
@@ -297,7 +319,7 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 	ofn.lStructSize = sizeof(OPENFILENAME);
 	ofn.hwndOwner = hwndOwner;
 	ofn.hInstance = NULL;
-	ofn.lpstrFilter = "Image Files(.jpg|.png|.bmp|.jpeg)\0*.jpg;*.png;*.bmp;*.jpeg\0\0";
+	ofn.lpstrFilter = "Bitmap Files (*.bmp)\0";
 	ofn.lpstrCustomFilter = NULL;
 	ofn.nMaxCustFilter = 0;
 	ofn.nFilterIndex = 1;

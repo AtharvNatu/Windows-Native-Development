@@ -1,7 +1,7 @@
 #include <windows.h>
 #include "Window.h"
 
-ADN_ICON ICON "Arch.ico"
+ADN_ICON ICON DISCARDABLE "Arch.ico"
 
 IE_MENU MENU
 BEGIN
@@ -25,19 +25,24 @@ END
 IE_DLG DIALOGEX 390, 30, 400, 200
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU
 CAPTION "Image Editor Controls"
-FONT 11, "Segoe UI"
+FONT 12, "Segoe UI"
 BEGIN
-    DEFPUSHBUTTON "About", ID_ABOUT, 280, 170, 30, 15, WS_GROUP
-    DEFPUSHBUTTON "Ok", ID_OK, 320, 170, 30, 15, WS_GROUP
-    DEFPUSHBUTTON "Exit", ID_EXIT, 360, 170, 30, 15, WS_GROUP
+    DEFPUSHBUTTON "About", ID_ABOUT,        280, 170, 30, 15, WS_GROUP
+    DEFPUSHBUTTON "Ok", ID_OK,              320, 170, 30, 15, WS_GROUP
+    DEFPUSHBUTTON "Exit", ID_EXIT,          360, 170, 30, 15, WS_GROUP
 END
 
-ABOUT_DLG DIALOGEX 0, 0, 300, 150
+ABOUT_DLG DIALOGEX 0, 0, 150, 110
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | DS_CENTER
 CAPTION "About Image Editor"
-FONT 11, "Segoe UI"
+FONT 12, "Segoe UI"
 BEGIN
-    ICON ADN_ICON, -1, 14, 14, 21, 20
-    LTEXT "Win32-Test, Version 1.0",-1,42,14,114,8,SS_NOPREFIX
+    ICON ADN_ICON,                              -1, 10, 10, 30, 30
+    CTEXT "Image Editor",                       -1, 25, 10, 100, 20
+    LTEXT "Software Version : v1.0",            -1, 35, 28, 100, 20
+    LTEXT "Developer : Atharv Natu",            -1, 35, 43, 100, 20
+    LTEXT "Email : natuatharv21@gmail.com",     -1, 35, 58, 120, 20
+    CTEXT "AstroMediComp",                      -1, 25, 75, 100, 20
+    DEFPUSHBUTTON "Ok", ID_OK,                  67, 92, 20, 10, WS_GROUP
 END
 
