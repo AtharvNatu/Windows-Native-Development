@@ -1,0 +1,77 @@
+#include <windows.h>
+#include "Window.h"
+
+ADN_ICON ICON DISCARDABLE "Arch.ico"
+
+IE_MENU MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open",                                   IDM_OPEN
+        MENUITEM "&Exit",                                   IDM_EXIT
+    END
+
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "&Edit Image",                             IDM_EDIT
+    END
+
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About",                                  IDM_ABOUT
+    END
+END
+
+IE_DLG DIALOGEX 390, 30, 400, 230
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU
+CAPTION "Image Editor And Color Picker"
+FONT 12, "Segoe UI"
+BEGIN
+    DEFPUSHBUTTON "Register User",                          ID_REGISTER,                    10, 10, 50, 15, WS_GROUP
+
+    GROUPBOX "Image Editor",                                ID_GRPBOX_EDITOR,               10, 35, 370, 100
+        GROUPBOX "Desaturation",                            ID_GRPBOX_DESATURATION,         20, 50, 100, 75
+            AUTORADIOBUTTON "Radio Button 1"                ID_DESAT_RB_1                   30, 65, 80, 10
+            AUTORADIOBUTTON "Radio Button 2"                ID_DESAT_RB_2                   30, 85, 80, 10
+            DEFPUSHBUTTON "Reset Image",                    ID_DESAT_RST,                   40, 104, 50, 12
+    
+        GROUPBOX "Sepia",                                   ID_GRPBOX_SEPIA,                135, 50, 100, 75
+            AUTORADIOBUTTON "Radio Button 1"                ID_SEPIA_RB_1                   145, 65, 80, 10
+            AUTORADIOBUTTON "Radio Button 2"                ID_SEPIA_RB_2                   145, 85, 80, 10
+            DEFPUSHBUTTON "Reset Image",                    ID_SEPIA_RST,                   155, 104, 50, 12
+
+        GROUPBOX "Color Inversion",                         ID_GRPBOX_INVERSION,            250, 50, 100, 75
+            AUTORADIOBUTTON "Radio Button 1"                ID_INV_RB_1                     260, 65, 80, 10
+            AUTORADIOBUTTON "Radio Button 2"                ID_INV_RB_2                     260, 85, 80, 10
+            DEFPUSHBUTTON "Reset Image",                    ID_INV_RST,                     270, 104, 50, 12
+
+    GROUPBOX "Color Picker",                                ID_GRPBOX_PICKER,               10, 145, 370, 60
+        LTEXT "Picked Color : ",                                                            -1, 20, 160, 70, 20
+        CTEXT "R",                                                                          -1, 103, 153, 5, 8
+        CTEXT "G",                                                                          -1, 123, 153, 5, 8
+        CTEXT "B",                                                                          -1, 143, 153, 5, 8
+        EDITTEXT                                            ID_COMPONENT_R,                 100, 165, 15, 12, WS_DISABLED
+        EDITTEXT                                            ID_COMPONENT_G,                 120, 165, 15, 12, WS_DISABLED
+        EDITTEXT                                            ID_COMPONENT_B,                 140, 165, 15, 12, WS_DISABLED
+        AUTOCHECKBOX "Export Picked Colors",                ID_CHK_PICK_LOG                 190, 150, 100, 20
+        AUTOCHECKBOX "Export Normalized Picked Colors",     ID_CHK_PICK_LOG_NL              190, 165, 110, 20
+
+    DEFPUSHBUTTON "About",                                  ID_ABOUT,                       280, 210, 30, 15, WS_GROUP
+    DEFPUSHBUTTON "Ok",                                     ID_OK,                          320, 210, 30, 15, WS_GROUP
+    DEFPUSHBUTTON "Exit",                                   ID_EXIT,                        360, 210, 30, 15, WS_GROUP
+END
+
+ABOUT_DLG DIALOGEX 0, 0, 150, 110
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | DS_CENTER
+CAPTION "About Image Editor"
+FONT 12, "Segoe UI"
+BEGIN
+    ICON ADN_ICON,                                                                          -1, 10, 10, 30, 30
+    CTEXT "Image Editor",                                                                   -1, 25, 10, 100, 20
+    LTEXT "Software Version : v1.0",                                                        -1, 35, 28, 100, 20
+    LTEXT "Developer : Atharv Natu",                                                        -1, 35, 43, 100, 20
+    LTEXT "Email : natuatharv21@gmail.com",                                                 -1, 35, 58, 120, 20
+    CTEXT "AstroMediComp",                                                                  -1, 25, 75, 100, 20
+    DEFPUSHBUTTON "Ok",                                     ID_ABT_OK,                          67, 92, 20, 10
+END
+

@@ -151,6 +151,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					RECT colorRect = { 450, 580, 530, 660 };
 					HBRUSH hBrush = CreateSolidBrush(RGB(rValue, gValue, bValue));
 					FillRect(hdc, &colorRect, hBrush);
+					DeleteObject(hBrush);
 
 					wsprintf(rgbValues, "R : %u, G : %u, B : %u\n", rValue, gValue, bValue);
 					SetBkColor(hdc, RGB(0, 0, 0));
