@@ -1,4 +1,6 @@
 #include <windows.h>
+#include <windowsx.h>
+#include <strsafe.h>
 #include "Window.h"
 
 #define WINDOW_WIDTH 	800
@@ -8,6 +10,7 @@
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK RegisterDialogProc(HWND, UINT, WPARAM, LPARAM);
 
 //* Global Function Declarations
 OPENFILENAME OpenFileDialog(HWND hwndOwner);
@@ -35,7 +38,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wndclass.lpfnWndProc = WndProc;
 	wndclass.lpszClassName = szAppName;
 	wndclass.lpszMenuName = MAKEINTRESOURCE(IE_MENU);
-	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.hbrBackground = CreateSolidBrush(RGB(244, 250, 255));
 	wndclass.hInstance = hInstance;
 	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
 	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
@@ -75,6 +78,39 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 }
 
+void ErrorExit(LPCTSTR lpszFunction) 
+{ 
+    // Retrieve the system error message for the last-error code
+
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = GetLastError(); 
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    // Display the error message and exit the process
+
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
+    StringCchPrintf((LPTSTR)lpDisplayBuf, 
+        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+        TEXT("%s failed with error %d: %s"), 
+        lpszFunction, dw, lpMsgBuf); 
+    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+    ExitProcess(dw); 
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	//* Variable Declarations
@@ -84,6 +120,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	HDC hdc = NULL;
 
 	static HBITMAP hBitmap = NULL;
+	static HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
 	static BOOL bImageLoaded = FALSE;
 	static TCHAR szImagePath[_MAX_PATH];
 	static unsigned int resizedWindowWidth = 0, resizedWindowHeight = 0;
@@ -94,6 +131,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		//* Message Handlers
 		case WM_CREATE:
 			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
+
+			hPickerCursor = (HCURSOR)LoadImage(NULL, "ColorPicker.cur", IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+			if (hPickerCursor == NULL)
+			{
+				MessageBox(NULL, TEXT("Failed To Load Picker Cursor .. Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
+				ErrorExit(TEXT("LoadCursor"));
+				DestroyWindow(hwnd);
+			}
+			
+
+			hDefaultCursor = LoadCursor(NULL, IDC_ARROW);
+
 		break;
 
 		case WM_SIZE:
@@ -111,9 +160,29 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			{
 				if (!bImageLoaded)
 				{
-					SetBkColor(hdc, RGB(0, 0, 0));
-					SetTextColor(hdc, RGB(0, 255, 0));
+					HFONT hFont = CreateFont(
+						24,
+						0,
+						0,
+						0,
+						FW_MEDIUM,
+						FALSE,
+						FALSE,
+						FALSE,
+						ANSI_CHARSET,
+						OUT_TT_PRECIS,
+						CLIP_DEFAULT_PRECIS,
+						DEFAULT_QUALITY,
+						DEFAULT_PITCH | FF_DONTCARE,
+						TEXT("Tahoma")
+					);
+
+					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+					SetBkColor(hdc, RGB(244, 250, 255));
+					SetTextColor(hdc, RGB(137, 147, 255));
 					DrawText(hdc, "Click On File Menu And Select 'Open' To Open An Image File", -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+					SelectObject(hdc, hOldFont);
+					DeleteObject(hFont);
 				}
 				else
 				{
@@ -146,6 +215,21 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				EndPaint(hwnd, &ps);
 				hdc = NULL;
 			}
+		break;
+
+		case WM_MOUSEMOVE:
+			//! For Color Picking
+			unsigned int pickedPixelX = GET_X_LPARAM(lParam);
+			unsigned int pickedPixelY = GET_Y_LPARAM(lParam);
+
+			if (pickedPixelX >= 50 && pickedPixelX <= 150 && pickedPixelY >= 50 && pickedPixelY <= 150) {
+                // Set the custom cursor
+                SetCursor(hPickerCursor);
+            } else {
+                // Set the default cursor
+                SetCursor(hDefaultCursor);
+            }
+
 		break;
 
 		case WM_COMMAND:
@@ -197,6 +281,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		break;
 
 		case WM_DESTROY:
+
+			if (hPickerCursor)
+			{
+				DestroyCursor(hPickerCursor);
+				hPickerCursor = NULL;
+			}
 			
 			if (hBitmap)
 			{
@@ -222,9 +312,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	// Variable Declarations
 	HDC hdc = NULL;
 	HBRUSH hBrush = NULL;
-	HPEN hPen = NULL;
 	PAINTSTRUCT ps;
-
 
 	// Code
 	switch(iMsg)
@@ -245,8 +333,8 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		case WM_PAINT:
 			HDC hdcPaint = BeginPaint(hDlg, &ps);
 			{
-				RECT colorRect = { 260, 475, 310, 525 };
-				hBrush = CreateSolidBrush(RGB(207, 241, 251));
+				RECT colorRect = { 390, 440, 450, 500 };
+				hBrush = CreateSolidBrush(RGB(203, 121, 251));
 				FillRect(hdcPaint, &colorRect, hBrush);
 				if (hBrush)
 				{
@@ -264,18 +352,30 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		case WM_COMMAND:
 			switch(LOWORD(wParam))
 			{
+				case ID_REGISTER:
+					DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hDlg, RegisterDialogProc);
+				break;
+
 				case ID_ABOUT:
 					DialogBox(ghInstance, MAKEINTRESOURCE(ABOUT_DLG), hDlg, AboutDialogProc);
 				break;
 
 				case ID_OK:
 				case ID_EXIT:
+					if (hdc)
+					{
+						hdc = NULL;
+					}
 					EndDialog(hDlg, (INT_PTR)0);
 				break;
 			}
 		return (INT_PTR)TRUE;
 
 		case WM_CLOSE:
+			if (hdc)
+			{
+				hdc = NULL;
+			}
 			EndDialog(hDlg, (INT_PTR)0);
 		return (INT_PTR)TRUE;
 
@@ -327,6 +427,51 @@ INT_PTR CALLBACK AboutDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lPa
 	return (INT_PTR)FALSE;
 }
 
+INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
+{
+	//*Variable Declarations
+	HDC hdc = NULL;
+	static HBRUSH hBrush = NULL;
+
+	// Code
+	switch(iMsg)
+	{
+		case WM_INITDIALOG:
+			return (INT_PTR)TRUE;
+
+		case WM_COMMAND:
+			switch(LOWORD(wParam))
+			{
+				case ID_REGISTER_BTN:
+					
+				break;
+			}
+		return (INT_PTR)TRUE;
+
+		case WM_CTLCOLORDLG:
+			return (INT_PTR)CreateSolidBrush(RGB(208, 221, 255));
+
+		case WM_CTLCOLORSTATIC:
+			hdc = (HDC)wParam;
+			SetTextColor(hdc, RGB(0, 0, 0));
+			SetBkMode(hdc, TRANSPARENT);
+		return (INT_PTR)CreateSolidBrush(RGB(208, 221, 255));
+
+		case WM_CLOSE:
+			if (hdc)
+			{
+				hdc = NULL;
+			}
+			EndDialog(hDlg, (INT_PTR)0);
+		break;
+
+		default:
+			return (INT_PTR)FALSE;
+	}
+
+	return (INT_PTR)FALSE;
+}
+
 OPENFILENAME OpenFileDialog(HWND hwndOwner)
 {
 	// Code
@@ -360,3 +505,4 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 
 	return ofn;
 }
+
