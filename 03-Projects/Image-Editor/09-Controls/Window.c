@@ -17,6 +17,12 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner);
 
 //* Global Variables
 HINSTANCE ghInstance = NULL;
+BOOL bDesaturate = FALSE;
+BOOL bSepia = FALSE;
+BOOL bInversion = FALSE;
+BOOL bResetImage = FALSE;
+BOOL bColorPick = FALSE;
+unsigned int giPixelX = 0, giPixelY = 0;
 
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -38,7 +44,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wndclass.lpfnWndProc = WndProc;
 	wndclass.lpszClassName = szAppName;
 	wndclass.lpszMenuName = MAKEINTRESOURCE(IE_MENU);
-	wndclass.hbrBackground = CreateSolidBrush(RGB(244, 250, 255));
+	wndclass.hbrBackground = CreateSolidBrush(RGB(197, 211, 224));
 	wndclass.hInstance = hInstance;
 	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
 	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
@@ -52,7 +58,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	//* Create Window in Memory
 	hwnd = CreateWindow(
 		szAppName,
-		TEXT("Atharv Natu : Image Editor Controls"),
+		TEXT("Image Editor v1.0"),
 		WS_OVERLAPPEDWINDOW,
 		0,
 		0,
@@ -119,7 +125,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 	HDC hdc = NULL;
 
-	static HBITMAP hBitmap = NULL;
+	static HBITMAP hBitmap = NULL, hOriginalBitmap = NULL;
 	static HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
 	static BOOL bImageLoaded = FALSE;
 	static TCHAR szImagePath[_MAX_PATH];
@@ -132,7 +138,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		case WM_CREATE:
 			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
 
-			hPickerCursor = (HCURSOR)LoadImage(NULL, "ColorPicker.cur", IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+			hPickerCursor = (HCURSOR)LoadImage(NULL, "Assets/Images/ColorPicker.cur", IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
 			if (hPickerCursor == NULL)
 			{
 				MessageBox(NULL, TEXT("Failed To Load Picker Cursor .. Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
@@ -140,9 +146,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				DestroyWindow(hwnd);
 			}
 			
-
 			hDefaultCursor = LoadCursor(NULL, IDC_ARROW);
-
 		break;
 
 		case WM_SIZE:
@@ -161,7 +165,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				if (!bImageLoaded)
 				{
 					HFONT hFont = CreateFont(
-						24,
+						36,
 						0,
 						0,
 						0,
@@ -172,14 +176,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						ANSI_CHARSET,
 						OUT_TT_PRECIS,
 						CLIP_DEFAULT_PRECIS,
-						DEFAULT_QUALITY,
-						DEFAULT_PITCH | FF_DONTCARE,
-						TEXT("Tahoma")
+						PROOF_QUALITY,
+						DEFAULT_PITCH | FF_MODERN,
+						TEXT("Poppins")
 					);
 
 					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-					SetBkColor(hdc, RGB(244, 250, 255));
-					SetTextColor(hdc, RGB(137, 147, 255));
+					SetBkColor(hdc, RGB(197, 211, 224));
+					SetTextColor(hdc, RGB(85, 136, 198));
 					DrawText(hdc, "Click On File Menu And Select 'Open' To Open An Image File", -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 					SelectObject(hdc, hOldFont);
 					DeleteObject(hFont);
@@ -187,8 +191,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				else
 				{
 					hdcMem = CreateCompatibleDC(hdc);
-					GetObject(hBitmap, sizeof(BITMAP), &bitmap);
-					SelectObject(hdcMem, hBitmap);
+					if (!bResetImage)
+					{
+						GetObject(hOriginalBitmap, sizeof(BITMAP), &bitmap);
+						SelectObject(hdcMem, hOriginalBitmap);
+					}
+					else
+					{
+						GetObject(hBitmap, sizeof(BITMAP), &bitmap);
+						SelectObject(hdcMem, hBitmap);
+					}
 					SetStretchBltMode(hdc, COLORONCOLOR);
 					StretchBlt(
 						hdc,
@@ -203,6 +215,96 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						bitmap.bmHeight,
 						SRCCOPY
 					);
+					
+					if (bDesaturate)
+					{
+						for (int yRow = 0; yRow < resizedWindowHeight; yRow++)
+						{
+							for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
+							{
+								// Get color from the pixel at co-ordinate (X-Column,Y-Row)
+								COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
+
+								unsigned int originalR = GetRValue(originalPixelColor);
+								unsigned int originalG = GetGValue(originalPixelColor);
+								unsigned int originalB = GetBValue(originalPixelColor);
+
+								unsigned int desaturatedR = (unsigned int)((float)originalR * 0.3f);
+								unsigned int desaturatedG = (unsigned int)((float)originalG * 0.59f);
+								unsigned int desaturatedB = (unsigned int)((float)originalB * 0.11f);
+
+								unsigned int finalDesaturatedColor = desaturatedR + desaturatedG + desaturatedB;
+								COLORREF desaturatedPixelColor = RGB(finalDesaturatedColor, finalDesaturatedColor, finalDesaturatedColor);
+
+								SetPixel(hdc, xColumn, yRow, desaturatedPixelColor);
+							}
+						}
+					}
+
+					if (bSepia)
+					{
+						for (int yRow = 0; yRow < resizedWindowHeight; yRow++)
+						{
+							for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
+							{
+								// Get color from the pixel at co-ordinate (X-Column,Y-Row)
+								COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
+
+								unsigned int originalR = GetRValue(originalPixelColor);
+								unsigned int originalG = GetGValue(originalPixelColor);
+								unsigned int originalB = GetBValue(originalPixelColor);
+
+								unsigned int sepiaR = (unsigned int)(((float)originalR * 0.393f) + ((float)originalG * 0.769f) + ((float)originalB * 0.189f));
+								if (sepiaR > 255)
+									sepiaR = 255;
+								
+								unsigned int sepiaG = (unsigned int)(((float)originalR * 0.349f) + ((float)originalG * 0.686f) + ((float)originalB * 0.168f));
+								if (sepiaG > 255)
+									sepiaG = 255;
+
+								unsigned int sepiaB = (unsigned int)(((float)originalR * 0.272f) + ((float)originalG * 0.534f) + ((float)originalB * 0.131f));
+								if (sepiaB > 255)
+									sepiaB = 255;
+									
+								COLORREF sepiaPixelColor = RGB(sepiaR, sepiaG, sepiaB);
+
+								SetPixel(hdc, xColumn, yRow, sepiaPixelColor);
+							}
+						}
+					}
+
+					if (bInversion)
+					{
+						for (int yRow = 0; yRow < resizedWindowHeight; yRow++)
+						{
+							for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
+							{
+								// Get color from the pixel at co-ordinate (X-Column,Y-Row)
+								COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
+
+								unsigned int originalR = GetRValue(originalPixelColor);
+								unsigned int originalG = GetGValue(originalPixelColor);
+								unsigned int originalB = GetBValue(originalPixelColor);
+
+								unsigned int negativeR = 255 - originalR;
+								if (negativeR < 0)
+									negativeR = 0;
+								
+								unsigned int negativeG = 255 - originalG;
+								if (negativeG < 0)
+									negativeG = 0;
+
+								unsigned int negativeB = 255 - originalB;
+								if (negativeB < 0)
+									negativeB = 0;
+
+								COLORREF negativePixelColor = RGB(negativeR, negativeG, negativeB);
+
+								SetPixel(hdc, xColumn, yRow, negativePixelColor);
+							}
+						}
+					}
+
 					if (hdcMem)
 					{
 						DeleteDC(hdcMem);
@@ -219,17 +321,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_MOUSEMOVE:
 			//! For Color Picking
-			unsigned int pickedPixelX = GET_X_LPARAM(lParam);
-			unsigned int pickedPixelY = GET_Y_LPARAM(lParam);
+			if (bImageLoaded)
+			{
+				unsigned int pickedPixelX = GET_X_LPARAM(lParam);
+				unsigned int pickedPixelY = GET_Y_LPARAM(lParam);
 
-			if (pickedPixelX >= 50 && pickedPixelX <= 150 && pickedPixelY >= 50 && pickedPixelY <= 150) {
-                // Set the custom cursor
-                SetCursor(hPickerCursor);
-            } else {
-                // Set the default cursor
-                SetCursor(hDefaultCursor);
-            }
+				if (pickedPixelX >= 0 && pickedPixelX <= resizedWindowWidth && pickedPixelY >= 0 && pickedPixelY <= resizedWindowHeight)
+					SetCursor(hPickerCursor);
+				else
+					SetCursor(hDefaultCursor);
+			}
+		break;
 
+		case WM_LBUTTONDOWN:
+			if (bImageLoaded)
+			{
+				giPixelX = GET_X_LPARAM(lParam);
+				giPixelY = GET_Y_LPARAM(lParam);
+				bColorPick = TRUE;
+			}
 		break;
 
 		case WM_COMMAND:
@@ -238,31 +348,44 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				case IDM_OPEN:
 					
 					OPENFILENAME ofn = OpenFileDialog(hwnd);
-					if (GetOpenFileName((LPOPENFILENAME)&ofn) == FALSE)
+					if (GetOpenFileName((LPOPENFILENAME)&ofn))
 					{
-						MessageBox(NULL, TEXT("Failed To Open File Dialog ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
-						DestroyWindow(hwnd);
-					}
-					wsprintf(szImagePath, ofn.lpstrFile);
+						wsprintf(szImagePath, ofn.lpstrFile);
 
-					if (bImageLoaded)
-					{
-						if (hBitmap)
+						if (bImageLoaded)
 						{
-							DeleteObject(hBitmap);
-							hBitmap = NULL;
-						}
-					}
+							if (hOriginalBitmap)
+							{
+								DeleteObject(hOriginalBitmap);
+								hOriginalBitmap = NULL;
+							}
 
-					hBitmap = (HBITMAP)LoadImage(NULL, szImagePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-					if (hBitmap == NULL)
-					{
-						bImageLoaded = FALSE;
-						MessageBox(NULL, TEXT("Failed To Load Bitmap ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
-						DestroyWindow(hwnd);
+							if (hBitmap)
+							{
+								DeleteObject(hBitmap);
+								hBitmap = NULL;
+							}
+						}
+
+						hBitmap = (HBITMAP)LoadImage(NULL, szImagePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+						if (hBitmap == NULL)
+						{
+							bImageLoaded = FALSE;
+							MessageBox(NULL, TEXT("Failed To Load Bitmap ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
+							DestroyWindow(hwnd);
+						}
+
+						hOriginalBitmap = CopyImage(hBitmap, IMAGE_BITMAP, 0, 0, LR_COPYRETURNORG);
+						if (hOriginalBitmap == NULL)
+						{
+							bImageLoaded = FALSE;
+							MessageBox(NULL, TEXT("Failed To Store Bitmap ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
+							DestroyWindow(hwnd);
+						}
+
+						bImageLoaded = TRUE;
+						InvalidateRect(hwnd, NULL, TRUE);
 					}
-					bImageLoaded = TRUE;
-					InvalidateRect(hwnd, NULL, TRUE);
 
 				break;
 
@@ -286,6 +409,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			{
 				DestroyCursor(hPickerCursor);
 				hPickerCursor = NULL;
+			}
+
+			if (hOriginalBitmap)
+			{
+				DeleteObject(hOriginalBitmap);
+				hOriginalBitmap = NULL;
 			}
 			
 			if (hBitmap)
@@ -322,24 +451,31 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		return (INT_PTR)TRUE;
 
 		case WM_CTLCOLORDLG:
-			return (INT_PTR)CreateSolidBrush(RGB(207, 241, 251));
+			return (INT_PTR)CreateSolidBrush(RGB(197, 211, 224));
 
 		case WM_CTLCOLORSTATIC:
 			hdc = (HDC)wParam;
 			SetTextColor(hdc, RGB(0, 0, 0));
 			SetBkMode(hdc, TRANSPARENT);
-		return (INT_PTR)CreateSolidBrush(RGB(207, 241, 251));
+		return (INT_PTR)CreateSolidBrush(RGB(197, 211, 224));
 
 		case WM_PAINT:
 			HDC hdcPaint = BeginPaint(hDlg, &ps);
 			{
-				RECT colorRect = { 390, 440, 450, 500 };
-				hBrush = CreateSolidBrush(RGB(203, 121, 251));
-				FillRect(hdcPaint, &colorRect, hBrush);
-				if (hBrush)
+				if (bColorPick)
 				{
+					COLORREF pickedPixel = GetPixel(hdc, giPixelX, giPixelY);
+					
+					unsigned int rValue = GetRValue(pickedPixel);
+					unsigned int gValue = GetGValue(pickedPixel);
+					unsigned int bValue = GetBValue(pickedPixel);
+
+					RECT colorRect = { 780, 150, 840, 210 };
+					HBRUSH hBrush = CreateSolidBrush(RGB(rValue, gValue, bValue));
+					FillRect(hdc, &colorRect, hBrush);
 					DeleteObject(hBrush);
-					hBrush = NULL;
+
+					bColorPick = FALSE;
 				}
 			}
 			if (hdcPaint)
@@ -354,6 +490,36 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			{
 				case ID_REGISTER:
 					DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hDlg, RegisterDialogProc);
+				break;
+
+				case ID_APPLY:
+					if (IsDlgButtonChecked(hDlg, ID_RB_DESAT))
+					{
+						bDesaturate = TRUE;
+						bSepia = FALSE;
+						bInversion = FALSE;
+					}
+					else if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
+					{
+						bDesaturate = FALSE;
+						bSepia = TRUE;
+						bInversion = FALSE;
+					}
+					else if (IsDlgButtonChecked(hDlg, ID_RB_INV))
+					{
+						bDesaturate = FALSE;
+						bSepia = FALSE;
+						bInversion = TRUE;
+					}
+					InvalidateRect(GetParent(hDlg), NULL, TRUE);
+				break;
+
+				case ID_RESET:
+					bResetImage = TRUE;
+					bDesaturate = FALSE;
+					bSepia = FALSE;
+					bInversion = FALSE;
+					InvalidateRect(GetParent(hDlg), NULL, TRUE);
 				break;
 
 				case ID_ABOUT:
@@ -449,13 +615,13 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		return (INT_PTR)TRUE;
 
 		case WM_CTLCOLORDLG:
-			return (INT_PTR)CreateSolidBrush(RGB(208, 221, 255));
+			return (INT_PTR)CreateSolidBrush(RGB(197, 211, 224));
 
 		case WM_CTLCOLORSTATIC:
 			hdc = (HDC)wParam;
 			SetTextColor(hdc, RGB(0, 0, 0));
 			SetBkMode(hdc, TRANSPARENT);
-		return (INT_PTR)CreateSolidBrush(RGB(208, 221, 255));
+		return (INT_PTR)CreateSolidBrush(RGB(197, 211, 224));
 
 		case WM_CLOSE:
 			if (hdc)
@@ -486,7 +652,7 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 	ofn.lStructSize = sizeof(OPENFILENAME);
 	ofn.hwndOwner = hwndOwner;
 	ofn.hInstance = NULL;
-	ofn.lpstrFilter = "Bitmap Files (*.bmp)\0";
+	ofn.lpstrFilter = TEXT("Bitmap Files\0*.bmp\0");
 	ofn.lpstrCustomFilter = NULL;
 	ofn.nMaxCustFilter = 0;
 	ofn.nFilterIndex = 1;
@@ -499,7 +665,7 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 	ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_READONLY | OFN_EXPLORER;
 	ofn.nFileOffset = 0;
 	ofn.nFileExtension = 0;
-	ofn.lpstrDefExt = TEXT("*");
+	ofn.lpstrDefExt = TEXT("bmp");
 	ofn.lCustData = 0L;
 	ofn.lpTemplateName = NULL;
 
