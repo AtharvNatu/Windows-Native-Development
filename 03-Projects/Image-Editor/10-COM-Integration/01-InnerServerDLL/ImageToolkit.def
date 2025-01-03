@@ -1,0 +1,4 @@
+LIBRARY ImageToolkit.dll
+EXPORTS
+    DllGetClassObject   PRIVATE
+    DllCanUnloadNow     PRIVATE

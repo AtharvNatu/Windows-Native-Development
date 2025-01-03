@@ -1,28 +1,21 @@
-#include <windows.h>
-#include <windowsx.h>
-#include <strsafe.h>
 #include "Window.h"
-
-#define WINDOW_WIDTH 	800
-#define WINDOW_HEIGHT	600
-
-//* Global Callback Declaration
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK RegisterDialogProc(HWND, UINT, WPARAM, LPARAM);
-
-//* Global Function Declarations
-OPENFILENAME OpenFileDialog(HWND hwndOwner);
+#include "Server/ImageEditor.h"
 
 //* Global Variables
 HINSTANCE ghInstance = NULL;
+HRESULT hr = S_OK;
+
+IDesaturation *pIDesaturation = NULL;
+ISepia *pISepia = NULL;
+IColorInversion *pIColorInversion = NULL;
+
 BOOL bDesaturate = FALSE;
 BOOL bSepia = FALSE;
 BOOL bInversion = FALSE;
 BOOL bResetImage = FALSE;
 BOOL bColorPick = FALSE;
 BOOL bUserRegistered = FALSE;
+
 unsigned int giPixelX = 0, giPixelY = 0;
 
 //* Entry-point Function
@@ -36,6 +29,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 	//* Code
 	ZeroMemory((void*)&wndclass, sizeof(WNDCLASSEX));
+
+	//! Start COM Engine
+	hr = CoInitialize(NULL);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, TEXT("Failed To Initialize COM Library ... Exiting Now !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+		exit(EXIT_FAILURE);
+	}
 	
 	//* Initialization of Window Class
 	wndclass.cbSize = sizeof(WNDCLASSEX);
@@ -80,6 +81,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+
+	//! Stop COM Engine
+	CoUninitialize();
 
 	return (int)msg.wParam;
 
@@ -126,6 +130,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 	HDC hdc = NULL;
 
+	COLORREF desaturatedPixelColor, sepiaPixelColor, negativePixelColor;
+
 	static HBITMAP hBitmap = NULL, hOriginalBitmap = NULL;
 	static HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
 	static BOOL bImageLoaded = FALSE;
@@ -148,6 +154,39 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			}
 			
 			hDefaultCursor = LoadCursor(NULL, IDC_ARROW);
+
+			hr = CoCreateInstance(
+				CLSID_ImageEditor,
+				NULL,						
+				CLSCTX_INPROC_SERVER,
+				IID_Desaturation,
+				(void**)&pIDesaturation
+			);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain IDesaturation Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr);
+				DestroyWindow(hwnd);
+			}
+
+			//! Sepia
+			hr = pIDesaturation->QueryInterface(IID_ISepia, (void**)&pISepia);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain ISepia Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr);
+				DestroyWindow(hwnd);
+			}
+
+			//! Color Inversion
+			hr = pIDesaturation->QueryInterface(IID_IColorInversion, (void**)&pIColorInversion);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain IColorInversion Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr);
+				DestroyWindow(hwnd);
+			}
+
 		break;
 
 		case WM_SIZE:
@@ -225,18 +264,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							{
 								// Get color from the pixel at co-ordinate (X-Column,Y-Row)
 								COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-
-								unsigned int originalR = GetRValue(originalPixelColor);
-								unsigned int originalG = GetGValue(originalPixelColor);
-								unsigned int originalB = GetBValue(originalPixelColor);
-
-								unsigned int desaturatedR = (unsigned int)((float)originalR * 0.3f);
-								unsigned int desaturatedG = (unsigned int)((float)originalG * 0.59f);
-								unsigned int desaturatedB = (unsigned int)((float)originalB * 0.11f);
-
-								unsigned int finalDesaturatedColor = desaturatedR + desaturatedG + desaturatedB;
-								COLORREF desaturatedPixelColor = RGB(finalDesaturatedColor, finalDesaturatedColor, finalDesaturatedColor);
-
+								pIDesaturation->Desaturation(originalPixelColor, &desaturatedPixelColor);
 								SetPixel(hdc, xColumn, yRow, desaturatedPixelColor);
 							}
 						}
@@ -250,25 +278,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							{
 								// Get color from the pixel at co-ordinate (X-Column,Y-Row)
 								COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-
-								unsigned int originalR = GetRValue(originalPixelColor);
-								unsigned int originalG = GetGValue(originalPixelColor);
-								unsigned int originalB = GetBValue(originalPixelColor);
-
-								unsigned int sepiaR = (unsigned int)(((float)originalR * 0.393f) + ((float)originalG * 0.769f) + ((float)originalB * 0.189f));
-								if (sepiaR > 255)
-									sepiaR = 255;
-								
-								unsigned int sepiaG = (unsigned int)(((float)originalR * 0.349f) + ((float)originalG * 0.686f) + ((float)originalB * 0.168f));
-								if (sepiaG > 255)
-									sepiaG = 255;
-
-								unsigned int sepiaB = (unsigned int)(((float)originalR * 0.272f) + ((float)originalG * 0.534f) + ((float)originalB * 0.131f));
-								if (sepiaB > 255)
-									sepiaB = 255;
-									
-								COLORREF sepiaPixelColor = RGB(sepiaR, sepiaG, sepiaB);
-
+								pISepia->Sepia(originalPixelColor, &sepiaPixelColor);
 								SetPixel(hdc, xColumn, yRow, sepiaPixelColor);
 							}
 						}
@@ -282,25 +292,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							{
 								// Get color from the pixel at co-ordinate (X-Column,Y-Row)
 								COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-
-								unsigned int originalR = GetRValue(originalPixelColor);
-								unsigned int originalG = GetGValue(originalPixelColor);
-								unsigned int originalB = GetBValue(originalPixelColor);
-
-								unsigned int negativeR = 255 - originalR;
-								if (negativeR < 0)
-									negativeR = 0;
-								
-								unsigned int negativeG = 255 - originalG;
-								if (negativeG < 0)
-									negativeG = 0;
-
-								unsigned int negativeB = 255 - originalB;
-								if (negativeB < 0)
-									negativeB = 0;
-
-								COLORREF negativePixelColor = RGB(negativeR, negativeG, negativeB);
-
+								pIColorInversion->ColorInversion(originalPixelColor, &negativePixelColor);
 								SetPixel(hdc, xColumn, yRow, negativePixelColor);
 							}
 						}
@@ -381,7 +373,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							DestroyWindow(hwnd);
 						}
 
-						hOriginalBitmap = CopyImage(hBitmap, IMAGE_BITMAP, 0, 0, LR_COPYRETURNORG);
+						hOriginalBitmap = (HBITMAP)CopyImage(hBitmap, IMAGE_BITMAP, 0, 0, LR_COPYRETURNORG);
 						if (hOriginalBitmap == NULL)
 						{
 							bImageLoaded = FALSE;
@@ -410,6 +402,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		break;
 
 		case WM_DESTROY:
+
+			SafeInterfaceRelease();
 
 			if (hPickerCursor)
 			{
@@ -441,11 +435,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hwnd, iMsg, wParam, lParam);
 }
 
-
 INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	// Variable Declarations
-	HDC hdc = NULL;
+	HDC hdc = NULL, hdcPaint = NULL;
 	HBRUSH hBrush = NULL;
 	PAINTSTRUCT ps;
 
@@ -466,7 +459,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		return (INT_PTR)CreateSolidBrush(RGB(197, 211, 224));
 
 		case WM_PAINT:
-			HDC hdcPaint = BeginPaint(hDlg, &ps);
+			hdcPaint = BeginPaint(hDlg, &ps);
 			{
 				if (bColorPick)
 				{
@@ -679,3 +672,48 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 	return ofn;
 }
 
+void GetErrorMessage(HRESULT hr)
+{
+	// Variable Declarationss
+	LPVOID buffer;
+
+	// Code
+	DWORD dw = FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		hr,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPSTR)&buffer,
+		0,
+		NULL
+	);
+
+	if (dw != 0)
+	{
+		MessageBox(NULL, (LPCTSTR)buffer, TEXT("COM Error"), MB_ICONERROR | MB_OK);
+		LocalFree(buffer);
+	}
+	else
+		MessageBox(NULL, TEXT("Unknown Error Code !!!"), TEXT("Unknown Error"), MB_ICONERROR | MB_OK);
+}
+
+void SafeInterfaceRelease(void)
+{
+	if (pIColorInversion)
+	{
+		pIColorInversion->Release();
+		pIColorInversion = NULL;
+	}
+
+	if (pISepia)
+	{
+		pISepia->Release();
+		pISepia = NULL;
+	}
+
+	if (pIDesaturation)
+	{
+		pIDesaturation->Release();
+		pIDesaturation = NULL;
+	}
+}
