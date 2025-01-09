@@ -22,7 +22,7 @@ echo ---------------------------------------------------------------------------
 echo Linking Libraries and Resources...
 echo Creating Executable...
 echo ----------------------------------------------------------------------------------------------------------------
-link.exe Window.obj Window.res user32.lib gdi32.lib comdlg32.lib ole32.lib /SUBSYSTEM:WINDOWS /OUT:ImageEditor.exe
+link.exe Window.obj Window.res user32.lib gdi32.lib comdlg32.lib ole32.lib Shlwapi.lib /SUBSYSTEM:WINDOWS /OUT:ImageEditor.exe
 
 @echo:
 echo ----------------------------------------------------------------------------------------------------------------

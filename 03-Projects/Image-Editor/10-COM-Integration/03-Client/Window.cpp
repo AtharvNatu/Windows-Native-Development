@@ -2,6 +2,13 @@
 #include "Server/ImageEditor.h"
 
 //* Global Variables
+struct User
+{
+	char firstName[TEXT_LENGTH];
+	char middleName[TEXT_LENGTH];
+	char surname[TEXT_LENGTH];
+} user;
+
 HINSTANCE ghInstance = NULL;
 HRESULT hr = S_OK;
 
@@ -15,6 +22,10 @@ BOOL bInversion = FALSE;
 BOOL bResetImage = FALSE;
 BOOL bColorPick = FALSE;
 BOOL bUserRegistered = FALSE;
+
+FILE* gpFile_UserLog = NULL;
+
+SYSTEMTIME systemTime;
 
 unsigned int giPixelX = 0, giPixelY = 0;
 
@@ -52,8 +63,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
 	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
 
-	ghInstance = hInstance;
-
 	//* Register the above created class
 	RegisterClassEx(&wndclass);
 
@@ -71,6 +80,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		hInstance,
 		NULL
 	);
+
+	ghInstance = hInstance;
 
 	ShowWindow(hwnd, iCmdShow);
 	UpdateWindow(hwnd);
@@ -137,6 +148,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	static BOOL bImageLoaded = FALSE;
 	static TCHAR szImagePath[_MAX_PATH];
 	static unsigned int resizedWindowWidth = 0, resizedWindowHeight = 0;
+	
+	//? User Registration
+	int checkFileStatus = -1;
+	char *lFileName = NULL;
+	char fileName[] = "F:\\Win32-COM\\Windows-Native-Development\\03-Projects\\Image-Editor\\10-COM-Integration\\03-Client\\User-Log.log";
 	
 	// Code
 	switch (iMsg)
@@ -327,8 +343,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		break;
 
 		case WM_SETFOCUS:
+
+			lFileName = fileName;
+			checkFileStatus = PathFileExists(lFileName);
+			if (checkFileStatus == 1)
+				bUserRegistered = TRUE;
+			else
+				bUserRegistered = FALSE;
+
 			if (!bUserRegistered)
 				DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hwnd, RegisterDialogProc);
+				
 		break;
 
 		case WM_LBUTTONDOWN:
@@ -421,6 +446,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			{
 				DeleteObject(hBitmap);
 				hBitmap = NULL;
+			}
+
+			if (gpFile_UserLog)
+			{
+				fclose(gpFile_UserLog);
+				gpFile_UserLog = NULL;
 			}
 
 			PostQuitMessage(0);
@@ -608,7 +639,34 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			switch(LOWORD(wParam))
 			{
 				case ID_REGISTER_BTN:
+					GetDlgItemText(hDlg, ID_FNAME, user.firstName, TEXT_LENGTH);
+					GetDlgItemText(hDlg, ID_MNAME, user.middleName, TEXT_LENGTH);
+					GetDlgItemText(hDlg, ID_SNAME, user.surname, TEXT_LENGTH);
+					
+					//! Perform Spot Validation
+
+
+					gpFile_UserLog = fopen("User-Log.log", "w");
+					if (gpFile_UserLog == NULL)
+					{
+						MessageBox(NULL, TEXT("Failed To Create User Log File !!!"), TEXT("Error"), MB_ICONERROR | MB_OK);
+						return (INT_PTR)FALSE;
+					}
+
+					GetLocalTime(&systemTime);
+					
+					fprintf(gpFile_UserLog, "Image Editor v1.0 User Registration Log\n");
+					fprintf(gpFile_UserLog, "---------------------------------------------------------------\n");
+					fprintf(gpFile_UserLog, "First Name : %s\n", user.firstName);
+					fprintf(gpFile_UserLog, "Middle Name : %s\n", user.middleName);
+					fprintf(gpFile_UserLog, "Surname : %s\n", user.surname);
+					fprintf(gpFile_UserLog, "Date and Time : %02d:%02d\n", systemTime.wHour, systemTime.wMinute);
+					fprintf(gpFile_UserLog, "---------------------------------------------------------------\n");
+
 					bUserRegistered = TRUE;
+
+					MessageBox(NULL, TEXT("User Registered Successfully ..."), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
+
 					EndDialog(hDlg, (INT_PTR)0);
 				break;
 			}

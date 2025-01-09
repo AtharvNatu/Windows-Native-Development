@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <strsafe.h>
+#include <Shlwapi.h>
 
 //! Icon
 #define ADN_ICON                            101
@@ -47,6 +48,8 @@
 
 #define WINDOW_WIDTH 	800
 #define WINDOW_HEIGHT	600
+
+#define TEXT_LENGTH     50
 
 //* Global Callback Declaration
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
