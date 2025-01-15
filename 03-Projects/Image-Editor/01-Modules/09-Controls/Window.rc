@@ -3,6 +3,7 @@
 
 ADN_ICON            ICON    "Assets/Images/Arch.ico"
 ADN_PICKER_CURSOR   CURSOR  "Assets/Images/ColorPicker.cur"
+
 IE_MENU MENU
 BEGIN
     POPUP "&File"

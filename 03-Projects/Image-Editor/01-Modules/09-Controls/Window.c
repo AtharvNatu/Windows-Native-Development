@@ -651,7 +651,6 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 	OPENFILENAME ofn;
 	TCHAR szFileName[_MAX_PATH];
 
-	
 	ZeroMemory(&ofn, sizeof(OPENFILENAME));
 
 	szFileName[0] = '\0';
