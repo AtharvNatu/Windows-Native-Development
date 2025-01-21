@@ -1,0 +1,4 @@
+LIBRARY ImageEditor.dll
+EXPORTS
+    DllGetClassObject   PRIVATE
+    DllCanUnloadNow     PRIVATE
