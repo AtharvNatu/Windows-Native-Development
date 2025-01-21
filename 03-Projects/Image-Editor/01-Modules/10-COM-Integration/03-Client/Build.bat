@@ -2,6 +2,8 @@
 
 cls
 
+cd Bin
+
 if exist *.obj del *.obj
 if exist *.exe del *.exe
 if exist *.res del *.res
@@ -9,23 +11,26 @@ if exist *.res del *.res
 echo ----------------------------------------------------------------------------------------------------------------
 echo Compiling Source Code ...
 echo ----------------------------------------------------------------------------------------------------------------
-cl.exe /c /EHsc Window.cpp
+cl.exe /c /EHsc ..\Source\*.cpp
 
 @echo:
 echo ----------------------------------------------------------------------------------------------------------------
 echo Compiling Resource Files ...
 echo ----------------------------------------------------------------------------------------------------------------
-rc.exe Window.rc
+rc.exe ..\Assets\ImageEditor.rc
 
 @echo:
 echo ----------------------------------------------------------------------------------------------------------------
 echo Linking Libraries and Resources...
 echo Creating Executable...
 echo ----------------------------------------------------------------------------------------------------------------
-link.exe Window.obj Window.res user32.lib gdi32.lib comdlg32.lib ole32.lib Shlwapi.lib /SUBSYSTEM:WINDOWS /OUT:ImageEditor.exe
+link.exe *.obj *.res user32.lib gdi32.lib comdlg32.lib ole32.lib Shlwapi.lib /SUBSYSTEM:WINDOWS /OUT:ImageEditor.exe
 
 @echo:
 echo ----------------------------------------------------------------------------------------------------------------
 echo Launching Application ...
 echo ----------------------------------------------------------------------------------------------------------------
+copy ImageEditor.exe ..\  > nul 2>&1
+cd ..
 ImageEditor.exe
+

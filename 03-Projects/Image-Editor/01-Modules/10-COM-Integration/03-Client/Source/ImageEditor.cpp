@@ -1,16 +1,10 @@
-#include "Window.h"
-#include "Server/ImageEditor.h"
+#include "../Include/Utils.h"
 
 //* Global Variables
-struct User
-{
-	char firstName[TEXT_LENGTH];
-	char middleName[TEXT_LENGTH];
-	char surname[TEXT_LENGTH];
-} user;
-
 HINSTANCE ghInstance = NULL;
 HRESULT hr = S_OK;
+HBITMAP hBitmap = NULL, hOriginalBitmap = NULL;
+HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
 
 IDesaturation *pIDesaturation = NULL;
 ISepia *pISepia = NULL;
@@ -24,10 +18,20 @@ BOOL bColorPick = FALSE;
 BOOL bUserRegistered = FALSE;
 
 FILE* gpFile_UserLog = NULL;
+FILE* gpFile_AppLog = NULL;
 
 SYSTEMTIME systemTime;
 
 unsigned int giPixelX = 0, giPixelY = 0;
+
+typedef struct tagUser
+{
+	char firstName[TEXT_LENGTH];
+	char middleName[TEXT_LENGTH];
+	char surname[TEXT_LENGTH];
+} USER;
+
+USER user;
 
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -45,7 +49,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	hr = CoInitialize(NULL);
 	if (FAILED(hr))
 	{
-		MessageBox(NULL, TEXT("Failed To Initialize COM Library ... Exiting Now !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+		MessageBox(NULL, TEXT("Failed To Initialize COM Library ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+		exit(EXIT_FAILURE);
+	}
+
+	//! App Log File
+	if (!CreateOpenLogFile(gpFile_AppLog, "ImageEditor.log", "a+"))
+	{
+		MessageBox(NULL, TEXT("Failed To Create App Log File ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
 		exit(EXIT_FAILURE);
 	}
 	
@@ -100,39 +111,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 }
 
-void ErrorExit(LPCTSTR lpszFunction) 
-{ 
-    // Retrieve the system error message for the last-error code
-
-    LPVOID lpMsgBuf;
-    LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError(); 
-
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
-
-    // Display the error message and exit the process
-
-    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
-        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
-    StringCchPrintf((LPTSTR)lpDisplayBuf, 
-        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-        TEXT("%s failed with error %d: %s"), 
-        lpszFunction, dw, lpMsgBuf); 
-    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
-
-    LocalFree(lpMsgBuf);
-    LocalFree(lpDisplayBuf);
-    ExitProcess(dw); 
-}
-
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	//* Variable Declarations
@@ -143,11 +121,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 	COLORREF desaturatedPixelColor, sepiaPixelColor, negativePixelColor;
 
-	static HBITMAP hBitmap = NULL, hOriginalBitmap = NULL;
-	static HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
 	static BOOL bImageLoaded = FALSE;
 	static TCHAR szImagePath[_MAX_PATH];
 	static unsigned int resizedWindowWidth = 0, resizedWindowHeight = 0;
+	int errorStatus = 0;
+	BOOL bCursorsLoaded = FALSE;
 	
 	//? User Registration
 	int checkFileStatus = -1;
@@ -159,48 +137,29 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	{
 		//* Message Handlers
 		case WM_CREATE:
+
 			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
 
-			hPickerCursor = (HCURSOR)LoadImage(NULL, "Assets/Images/ColorPicker.cur", IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-			if (hPickerCursor == NULL)
-			{
-				MessageBox(NULL, TEXT("Failed To Load Picker Cursor .. Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
-				ErrorExit(TEXT("LoadCursor"));
+			//! Load Cursors
+			bCursorsLoaded = LoadAppCursors(&hPickerCursor, &hDefaultCursor);
+			if (!bCursorsLoaded)
 				DestroyWindow(hwnd);
-			}
-			
-			hDefaultCursor = LoadCursor(NULL, IDC_ARROW);
 
-			hr = CoCreateInstance(
-				CLSID_ImageEditor,
-				NULL,						
-				CLSCTX_INPROC_SERVER,
-				IID_Desaturation,
-				(void**)&pIDesaturation
-			);
-			if (FAILED(hr))
+			//! COM Library
+			hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
+			switch(errorStatus)
 			{
-				MessageBox(hwnd, TEXT("Failed to obtain IDesaturation Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
-				GetErrorMessage(hr);
-				DestroyWindow(hwnd);
+				case -1: PrintLog(gpFile_AppLog, "Failed to obtain IDesaturation Interface !!!"); break;
+				case -2: PrintLog(gpFile_AppLog, "Failed to obtain ISepia Interface !!!"); break;
+				case -3: PrintLog(gpFile_AppLog, "Failed to obtain IColorInversion Interface !!!"); break;
+				default: break;
 			}
-
-			//! Sepia
-			hr = pIDesaturation->QueryInterface(IID_ISepia, (void**)&pISepia);
-			if (FAILED(hr))
+			if (errorStatus < 0)
 			{
-				MessageBox(hwnd, TEXT("Failed to obtain ISepia Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
-				GetErrorMessage(hr);
-				DestroyWindow(hwnd);
-			}
-
-			//! Color Inversion
-			hr = pIDesaturation->QueryInterface(IID_IColorInversion, (void**)&pIColorInversion);
-			if (FAILED(hr))
-			{
-				MessageBox(hwnd, TEXT("Failed to obtain IColorInversion Interface !!!"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
-				GetErrorMessage(hr);
-				DestroyWindow(hwnd);
+				MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+				if (DEBUG == 1)
+					GetErrorMessage(hr);
+				DestroyWindow(hwnd); 
 			}
 
 		break;
@@ -214,29 +173,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			
 			HDC hdcMem;
 			BITMAP bitmap;
+			HFONT hFont;
 
 			GetClientRect(hwnd, &rc);
 			hdc = BeginPaint(hwnd, &ps);
 			{
 				if (!bImageLoaded)
 				{
-					HFONT hFont = CreateFont(
-						36,
-						0,
-						0,
-						0,
-						FW_MEDIUM,
-						FALSE,
-						FALSE,
-						FALSE,
-						ANSI_CHARSET,
-						OUT_TT_PRECIS,
-						CLIP_DEFAULT_PRECIS,
-						PROOF_QUALITY,
-						DEFAULT_PITCH | FF_MODERN,
-						TEXT("Poppins")
-					);
-
+					CreateAppFont(&hFont, TEXT("Poppins"), 36);
 					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 					SetBkColor(hdc, RGB(197, 211, 224));
 					SetTextColor(hdc, RGB(85, 136, 198));
@@ -377,36 +321,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 						if (bImageLoaded)
 						{
-							if (hOriginalBitmap)
-							{
-								DeleteObject(hOriginalBitmap);
-								hOriginalBitmap = NULL;
-							}
-
-							if (hBitmap)
-							{
-								DeleteObject(hBitmap);
-								hBitmap = NULL;
-							}
+							DeleteImageObject(&hOriginalBitmap);
+							DeleteImageObject(&hBitmap);
 						}
 
-						hBitmap = (HBITMAP)LoadImage(NULL, szImagePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-						if (hBitmap == NULL)
+						if (!LoadImageFromExplorer(&hBitmap, &hOriginalBitmap, szImagePath))
 						{
 							bImageLoaded = FALSE;
 							MessageBox(NULL, TEXT("Failed To Load Bitmap ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
 							DestroyWindow(hwnd);
 						}
 
-						hOriginalBitmap = (HBITMAP)CopyImage(hBitmap, IMAGE_BITMAP, 0, 0, LR_COPYRETURNORG);
-						if (hOriginalBitmap == NULL)
-						{
-							bImageLoaded = FALSE;
-							MessageBox(NULL, TEXT("Failed To Store Bitmap ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
-							DestroyWindow(hwnd);
-						}
-
 						bImageLoaded = TRUE;
+
 						InvalidateRect(hwnd, NULL, TRUE);
 					}
 
@@ -428,31 +355,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_DESTROY:
 
-			SafeInterfaceRelease();
+			SafeInterfaceRelease(pIDesaturation, pISepia, pIColorInversion);
 
-			if (hPickerCursor)
-			{
-				DestroyCursor(hPickerCursor);
-				hPickerCursor = NULL;
-			}
+			DeleteAppCursor(&hPickerCursor);
+			DeleteImageObject(&hOriginalBitmap);
+			DeleteImageObject(&hBitmap);
 
-			if (hOriginalBitmap)
-			{
-				DeleteObject(hOriginalBitmap);
-				hOriginalBitmap = NULL;
-			}
-			
-			if (hBitmap)
-			{
-				DeleteObject(hBitmap);
-				hBitmap = NULL;
-			}
-
-			if (gpFile_UserLog)
-			{
-				fclose(gpFile_UserLog);
-				gpFile_UserLog = NULL;
-			}
+			CloseLogFile(gpFile_UserLog);
+			CloseLogFile(gpFile_AppLog);
 
 			PostQuitMessage(0);
 
@@ -639,6 +549,7 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			switch(LOWORD(wParam))
 			{
 				case ID_REGISTER_BTN:
+					
 					GetDlgItemText(hDlg, ID_FNAME, user.firstName, TEXT_LENGTH);
 					GetDlgItemText(hDlg, ID_MNAME, user.middleName, TEXT_LENGTH);
 					GetDlgItemText(hDlg, ID_SNAME, user.surname, TEXT_LENGTH);
@@ -646,11 +557,10 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 					//! Perform Spot Validation
 
 
-					gpFile_UserLog = fopen("User-Log.log", "w");
-					if (gpFile_UserLog == NULL)
+					if (!CreateOpenLogFile(gpFile_UserLog, "User-Log.log", "w"))
 					{
-						MessageBox(NULL, TEXT("Failed To Create User Log File !!!"), TEXT("Error"), MB_ICONERROR | MB_OK);
-						return (INT_PTR)FALSE;
+						MessageBox(NULL, TEXT("Failed To Create User Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
+						exit(EXIT_FAILURE);
 					}
 
 					GetLocalTime(&systemTime);
@@ -696,82 +606,7 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	return (INT_PTR)FALSE;
 }
 
-OPENFILENAME OpenFileDialog(HWND hwndOwner)
-{
-	// Code
-	OPENFILENAME ofn;
-	TCHAR szFileName[_MAX_PATH];
 
-	
-	ZeroMemory(&ofn, sizeof(OPENFILENAME));
 
-	szFileName[0] = '\0';
 
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = hwndOwner;
-	ofn.hInstance = NULL;
-	ofn.lpstrFilter = TEXT("Bitmap Files\0*.bmp\0");
-	ofn.lpstrCustomFilter = NULL;
-	ofn.nMaxCustFilter = 0;
-	ofn.nFilterIndex = 1;
-	ofn.lpstrFile = szFileName;
-	ofn.nMaxFile = _MAX_PATH;
-	ofn.lpstrFileTitle = NULL;
-	ofn.nMaxFileTitle = _MAX_FNAME + _MAX_EXT;
-	ofn.lpstrInitialDir = NULL;
-	ofn.lpstrTitle = TEXT("Select Image File");
-	ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_READONLY | OFN_EXPLORER;
-	ofn.nFileOffset = 0;
-	ofn.nFileExtension = 0;
-	ofn.lpstrDefExt = TEXT("bmp");
-	ofn.lCustData = 0L;
-	ofn.lpTemplateName = NULL;
 
-	return ofn;
-}
-
-void GetErrorMessage(HRESULT hr)
-{
-	// Variable Declarationss
-	LPVOID buffer;
-
-	// Code
-	DWORD dw = FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		hr,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPSTR)&buffer,
-		0,
-		NULL
-	);
-
-	if (dw != 0)
-	{
-		MessageBox(NULL, (LPCTSTR)buffer, TEXT("COM Error"), MB_ICONERROR | MB_OK);
-		LocalFree(buffer);
-	}
-	else
-		MessageBox(NULL, TEXT("Unknown Error Code !!!"), TEXT("Unknown Error"), MB_ICONERROR | MB_OK);
-}
-
-void SafeInterfaceRelease(void)
-{
-	if (pIColorInversion)
-	{
-		pIColorInversion->Release();
-		pIColorInversion = NULL;
-	}
-
-	if (pISepia)
-	{
-		pISepia->Release();
-		pISepia = NULL;
-	}
-
-	if (pIDesaturation)
-	{
-		pIDesaturation->Release();
-		pIDesaturation = NULL;
-	}
-}

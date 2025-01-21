@@ -1,8 +1,8 @@
 #include <windows.h>
-#include "Window.h"
+#include "../Include/ImageToolkit.h"
 
-ADN_ICON            ICON    "Assets/Images/Arch.ico"
-ADN_PICKER_CURSOR   CURSOR  "Assets/Images/ColorPicker.cur"
+ADN_ICON            ICON    "../Assets/Resources/Arch.ico"
+
 IE_MENU MENU
 BEGIN
     POPUP "&File"

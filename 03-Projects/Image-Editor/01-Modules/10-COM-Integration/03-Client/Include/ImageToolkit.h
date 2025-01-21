@@ -5,6 +5,9 @@
 #include <strsafe.h>
 #include <Shlwapi.h>
 
+//! App Mode
+#define DEBUG                               0
+
 //! Icon
 #define ADN_ICON                            101
 #define ADN_PICKER_CURSOR                   102
@@ -56,8 +59,3 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK RegisterDialogProc(HWND, UINT, WPARAM, LPARAM);
-
-//* Global Function Declarations
-OPENFILENAME OpenFileDialog(HWND hwndOwner);
-void GetErrorMessage(HRESULT hr);
-void SafeInterfaceRelease(void);
