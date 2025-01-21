@@ -1,6 +1,7 @@
 #include "ImageToolkit.h"
 #include "ImageEditor.h"
 
+
 //* Global Variable Declarations
 typedef struct tagTimeStruct
 {
@@ -15,6 +16,7 @@ typedef struct tagTimeStruct
 
 //* COM Related
 //*--------------------------------------------------------------------------------------------
+BOOL RegisterServerLibararies(void);
 HRESULT GetLibraryInterfaces(IDesaturation*, ISepia*, IColorInversion*, int*);
 void SafeInterfaceRelease(IDesaturation*, ISepia*, IColorInversion*);
 //*--------------------------------------------------------------------------------------------

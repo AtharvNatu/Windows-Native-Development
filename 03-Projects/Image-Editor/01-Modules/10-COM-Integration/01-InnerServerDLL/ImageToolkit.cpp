@@ -61,6 +61,7 @@ class CImageToolkitClassFactory :public IClassFactory
 // Global Variable Declarations
 long glNumberOfActiveComponents = 0;
 long glNumberofServerLocks = 0;
+HMODULE ghModule = NULL;
 
 // DllMain
 BOOL WINAPI DllMain(HMODULE hDll, DWORD dwReason, LPVOID lpReserved)
@@ -68,20 +69,23 @@ BOOL WINAPI DllMain(HMODULE hDll, DWORD dwReason, LPVOID lpReserved)
 	// Code
 	switch (dwReason)
 	{
-	case DLL_PROCESS_ATTACH:
+		case DLL_PROCESS_ATTACH:
+			ghModule = hDll;
 		break;
 
-	case DLL_THREAD_ATTACH:
+		case DLL_THREAD_ATTACH:
+			break;
+
+		case DLL_THREAD_DETACH:
+			break;
+
+		case DLL_PROCESS_DETACH:
+			if (ghModule)
+				ghModule = NULL;
 		break;
 
-	case DLL_THREAD_DETACH:
-		break;
-
-	case DLL_PROCESS_DETACH:
-		break;
-
-	default:
-		break;
+		default:
+			break;
 	}
 
 	return TRUE;
@@ -332,5 +336,102 @@ extern "C" HRESULT __stdcall DllCanUnloadNow(void)
 		return S_OK;
 	else
 		return S_FALSE;
+}
+
+extern "C" HRESULT __stdcall DllRegisterServer(void)
+{
+	// Variable Declarations
+	HKEY hCLSIDKey = NULL, hInProcServerKey = NULL;
+	LONG lRet;
+	TCHAR szModulePath[MAX_PATH];
+	TCHAR szClassDescription[] = TEXT("Image Toolkit Component");
+	TCHAR szThreadingModel[] = TEXT("Apartment");
+
+	// Code
+	__try
+	{
+		lRet = RegCreateKeyEx(
+			HKEY_CLASSES_ROOT, 
+			TEXT("CLSID\\{2F5B06BE-BF26-4AC1-B64F-5DE34974419D}"), 
+			0, 
+			NULL,
+			REG_OPTION_NON_VOLATILE,
+			KEY_SET_VALUE | KEY_CREATE_SUB_KEY,
+			NULL,
+			&hCLSIDKey,
+			NULL
+		);
+		if (lRet != ERROR_SUCCESS)
+			return HRESULT_FROM_WIN32(lRet);
+
+		lRet = RegSetValueEx(
+			hCLSIDKey,
+			NULL,
+			0,
+			REG_SZ,
+			(const BYTE*)szClassDescription,
+			sizeof(szClassDescription)
+		);
+		if (lRet != ERROR_SUCCESS)
+			return HRESULT_FROM_WIN32(lRet);
+
+		lRet = RegCreateKeyEx(
+			hCLSIDKey, 
+			TEXT("InProcServer32"), 
+			0, 
+			NULL,
+			REG_OPTION_NON_VOLATILE,
+			KEY_SET_VALUE,
+			NULL,
+			&hInProcServerKey,
+			NULL
+		);
+		if (lRet != ERROR_SUCCESS)
+			return HRESULT_FROM_WIN32(lRet);
+
+		GetModuleFileName(ghModule, szModulePath, MAX_PATH);
+
+		lRet = RegSetValueEx(
+			hInProcServerKey,
+			NULL,
+			0,
+			REG_SZ,
+			(const BYTE*)szModulePath,
+			sizeof(TCHAR) * (lstrlen(szModulePath) + 1)
+		);
+		if (lRet != ERROR_SUCCESS)
+			return HRESULT_FROM_WIN32(lRet);
+
+		lRet = RegSetValueEx(
+			hInProcServerKey,
+			TEXT("ThreadingModel"),
+			0,
+			REG_SZ,
+			(const BYTE*)szThreadingModel,
+			sizeof(szThreadingModel)
+		);
+		if (lRet != ERROR_SUCCESS)
+			return HRESULT_FROM_WIN32(lRet);
+	}
+	__finally
+	{
+		if (hInProcServerKey)
+			RegCloseKey(hInProcServerKey);
+
+		if (hCLSIDKey)
+			RegCloseKey(hCLSIDKey);
+	}
+
+	return S_OK;
+
+}
+
+extern "C" HRESULT __stdcall DllUnregisterServer(void)
+{
+	// Code
+	RegDeleteKey(HKEY_CLASSES_ROOT, TEXT("CLSID\\{2F5B06BE-BF26-4AC1-B64F-5DE34974419D}\\InProcServer32"));
+	RegDeleteKey(HKEY_CLASSES_ROOT, TEXT("CLSID\\{2F5B06BE-BF26-4AC1-B64F-5DE34974419D}"));
+
+	return S_OK;
 }
 //-----------------------------------------------------------------------------------------------------

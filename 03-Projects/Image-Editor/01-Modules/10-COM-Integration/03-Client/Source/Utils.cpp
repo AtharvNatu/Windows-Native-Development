@@ -1,7 +1,80 @@
 #include "../Include/Utils.h"
 
-//* COM Related
+//! COM Related
 //*--------------------------------------------------------------------------------------------
+BOOL RegisterDLL(char *szServerName)
+{
+    // Variable Declarations
+    char szShellCommand[512];
+
+    // Code
+    snprintf(szShellCommand, sizeof(szShellCommand), "regsvr32.exe \"%s\"", szServerName);
+
+    HINSTANCE hInst = ShellExecute(
+        NULL,
+        "runas",
+        "regsvr32",
+        szShellCommand,
+        NULL,
+        SW_SHOW
+    );
+
+    if ((INT_PTR)hInst > 32)
+        return TRUE;
+
+    return FALSE;
+}
+
+BOOL RegisterServerLibararies(void)
+{
+    // Variable Declarations
+    HKEY hCLSIDKeys[2];
+    LONG lResult;
+    BOOL bKey1_Exists = FALSE, bKey2_Exists = NULL;
+
+    // Code
+    lResult = RegOpenKeyEx(
+        HKEY_CLASSES_ROOT, 
+        TEXT("CLSID\\{A0E209B2-7EEE-4C54-ADD3-ADFAFA46E9A1}"),
+        0,
+        KEY_READ,
+        &hCLSIDKeys[0]
+    );
+
+    if (lResult != ERROR_SUCCESS)
+        bKey1_Exists = FALSE;
+    else
+        bKey1_Exists = TRUE;
+
+    lResult = RegOpenKeyEx(
+        HKEY_CLASSES_ROOT, 
+        TEXT("CLSID\\{2F5B06BE-BF26-4AC1-B64F-5DE34974419D}"),
+        0,
+        KEY_READ,
+        &hCLSIDKeys[1]
+    );
+
+    if (lResult != ERROR_SUCCESS)
+        bKey2_Exists = FALSE;
+    else
+        bKey2_Exists = TRUE;
+
+    if (bKey1_Exists == FALSE && bKey2_Exists == FALSE)
+    {   
+        if (RegisterDLL("ImageToolkit.dll") && RegisterDLL("ImageEditor.dll"))
+            return TRUE;
+        else
+            return FALSE;
+    }
+    else
+    {
+        RegCloseKey(hCLSIDKeys[1]);
+        RegCloseKey(hCLSIDKeys[0]);
+    }
+
+    return TRUE;
+}
+
 HRESULT GetLibraryInterfaces(IDesaturation *pIDesaturation, ISepia *pISepia, IColorInversion *pIColorInversion, int *iErrorCode)
 {
     // Code

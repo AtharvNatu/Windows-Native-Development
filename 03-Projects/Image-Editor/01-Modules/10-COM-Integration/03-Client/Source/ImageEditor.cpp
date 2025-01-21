@@ -45,6 +45,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	//* Code
 	ZeroMemory((void*)&wndclass, sizeof(WNDCLASSEX));
 
+	//! Register Server Libraries
+	if (!RegisterServerLibararies())
+	{
+		MessageBox(NULL, TEXT("Failed To Create Install Required Library Files ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+		exit(EXIT_FAILURE);
+	}
+
 	//! Start COM Engine
 	hr = CoInitialize(NULL);
 	if (FAILED(hr))
