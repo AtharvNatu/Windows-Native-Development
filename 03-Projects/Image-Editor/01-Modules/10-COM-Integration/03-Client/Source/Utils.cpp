@@ -1,6 +1,7 @@
 #include "../Include/Utils.h"
 
-//! COM Related
+//* COM Related
+//*--------------------------------------------------------------------------------------------
 HRESULT GetLibraryInterfaces(IDesaturation *pIDesaturation, ISepia *pISepia, IColorInversion *pIColorInversion, int *iErrorCode)
 {
     // Code
@@ -56,8 +57,11 @@ void SafeInterfaceRelease(IDesaturation *pIDesaturation, ISepia *pISepia, IColor
 		pIDesaturation = NULL;
 	}
 }
+//*--------------------------------------------------------------------------------------------
+
 
 //! UI Related
+//*--------------------------------------------------------------------------------------------
 BOOL LoadAppCursors(HCURSOR *hPickerCursor, HCURSOR *hDefaultCursor)
 {
     // Variable Declarations
@@ -65,11 +69,11 @@ BOOL LoadAppCursors(HCURSOR *hPickerCursor, HCURSOR *hDefaultCursor)
 
     // Code
     *hPickerCursor = LoadCursorFromFile(cursorPath);
-    if (hPickerCursor == NULL)
+    if (*hPickerCursor == NULL)
     {
-        MessageBox(NULL, TEXT("Failed To Load Picker Cursor .. Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
+        MessageBox(NULL, TEXT("Failed To Load App Picker Cursor .. Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
         if (DEBUG == 1)
-            ErrorExit(TEXT("LoadCursorFromFile"));
+            GetErrorMessage(NULL, TRUE, TEXT("LoadCursorFromFile"));
         return FALSE;
     }
 
@@ -133,42 +137,71 @@ void DeleteImageObject(HBITMAP *hBitmap)
     }
 }
 
+//*--------------------------------------------------------------------------------------------
 
 //! File I/O
-BOOL CreateOpenLogFile(FILE *pFile, const char *szFileName, const char *szMode)
+//*--------------------------------------------------------------------------------------------
+BOOL CreateOpenLogFile(FILE **ppFile, const char *szFileName, const char *szMode)
 {
     // Code
-    pFile = fopen(szFileName, szMode);
-    if (pFile == NULL)
+    *ppFile = fopen(szFileName, szMode);
+    if (*ppFile == NULL)
         return FALSE;
 
     return TRUE;
 }
 
-void PrintLog(FILE *pFile, const char *fmt, ...)
+void PrintLog(FILE **ppFile, const char *fmt, ...)
 {
     // Variable Declarations
     va_list arg;
     int ret;
 
     // Code
-    if (pFile == NULL)
+    if (*ppFile == NULL)
         return;
 
     va_start(arg, fmt);
     {
-        ret = vfprintf(pFile, fmt, arg);
+        ret = vfprintf(*ppFile, fmt, arg);
     }
     va_end(arg);
 }
 
-void CloseLogFile(FILE *pFile)
+void CloseLogFile(FILE **ppFile)
 {
-    if (pFile)
+    if (*ppFile)
     {
-        fclose(pFile);
-        pFile = NULL;
+        fclose(*ppFile);
+        *ppFile = NULL;
     }
+}
+
+FormattedTime GetFormattedTime(void)
+{
+    // Variable Declarations
+    FormattedTime formattedTime;
+    SYSTEMTIME systemTime;
+
+    // Code
+    GetLocalTime(&systemTime);
+
+    memset(&formattedTime, 0, sizeof(formattedTime));
+
+    formattedTime.hour = systemTime.wHour % 12;
+    if (formattedTime.hour == 0)
+        formattedTime.hour = 12;
+
+    formattedTime.minute = systemTime.wMinute;
+    formattedTime.second = systemTime.wSecond;
+    formattedTime.amPm = (formattedTime.hour >= 12) ? "PM" : "AM";
+
+    formattedTime.day = systemTime.wDay;
+    formattedTime.month = systemTime.wMonth;
+    formattedTime.year = systemTime.wYear;
+
+    return formattedTime;
+
 }
 
 
@@ -204,68 +237,76 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 
 	return ofn;
 }
+//*--------------------------------------------------------------------------------------------
 
 //! Error Handling
-void GetErrorMessage(HRESULT hr)
+//*--------------------------------------------------------------------------------------------
+void GetErrorMessage(HRESULT hr, BOOL bLastError, LPCTSTR lpszFunction)
 {
 	// Variable Declarationss
-	LPVOID buffer;
+	LPVOID lpMsgBuffer;
+    DWORD dw;
 
-	// Code
-	DWORD dw = FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		hr,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPSTR)&buffer,
-		0,
-		NULL
-	);
+    if (bLastError)
+    {
+        LPVOID lpDisplayBuffer;
 
-	if (dw != 0)
-	{
-		MessageBox(NULL, (LPCTSTR)buffer, TEXT("COM Debug Error"), MB_ICONERROR | MB_OK);
-		LocalFree(buffer);
-	}
-	else
-		MessageBox(NULL, TEXT("Unknown Error Code !!!"), TEXT("Unknown Error"), MB_ICONERROR | MB_OK);
-}
+        DWORD dw = GetLastError();
 
-void ErrorExit(LPCTSTR lpszFunction) 
-{ 
-    // Retrieve the system error message for the last-error code
+        FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            dw,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            (LPSTR)&lpMsgBuffer,
+            0,
+            NULL
+        );
 
-    LPVOID lpMsgBuf;
-    LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError(); 
+        lpDisplayBuffer = (LPVOID)LocalAlloc(
+            LMEM_ZEROINIT,
+            (lstrlen((LPCTSTR)lpMsgBuffer) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)
+        );
+        StringCchPrintf(
+            (LPTSTR)lpDisplayBuffer,
+            LocalSize(lpDisplayBuffer) / sizeof(TCHAR),
+            TEXT("%s() Failed With Error %d : %s"),
+            lpszFunction,
+            dw,
+            lpMsgBuffer
+        );
 
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
+        MessageBox(NULL, (LPCTSTR)lpMsgBuffer, TEXT("Win32 API Error"), MB_ICONERROR | MB_OK);
 
-    // Display the error message and exit the process
+        LocalFree(lpMsgBuffer);
+        LocalFree(lpDisplayBuffer);
 
-    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
-        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
-    StringCchPrintf((LPTSTR)lpDisplayBuf, 
-        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-        TEXT("%s failed with error %d: %s"), 
-        lpszFunction, dw, lpMsgBuf); 
-    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+    }
+    else
+    {
+        dw = FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            hr,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            (LPSTR)&lpMsgBuffer,
+            0,
+            NULL
+        );
 
-    LocalFree(lpMsgBuf);
-    LocalFree(lpDisplayBuf);
-    ExitProcess(dw); 
+        if (dw != 0)
+        {
+            MessageBox(NULL, (LPCTSTR)lpMsgBuffer, TEXT("COM Debug Error"), MB_ICONERROR | MB_OK);
+            LocalFree(lpMsgBuffer);
+        }
+        else
+            MessageBox(NULL, TEXT("Unknown Error Code !!!"), TEXT("Unknown Error"), MB_ICONERROR | MB_OK);
+    }
+	
 }
 
 void DebugMsg(TCHAR* szMsg)
 {
     MessageBox(NULL, szMsg, TEXT("Status"), MB_OK);
 }
-
+//*--------------------------------------------------------------------------------------------

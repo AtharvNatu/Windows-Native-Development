@@ -20,7 +20,7 @@ BOOL bUserRegistered = FALSE;
 FILE* gpFile_UserLog = NULL;
 FILE* gpFile_AppLog = NULL;
 
-SYSTEMTIME systemTime;
+FormattedTime formattedTime;
 
 unsigned int giPixelX = 0, giPixelY = 0;
 
@@ -54,7 +54,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	}
 
 	//! App Log File
-	if (!CreateOpenLogFile(gpFile_AppLog, "ImageEditor.log", "a+"))
+	if (!CreateOpenLogFile(&gpFile_AppLog, "ImageEditor.log", "a+"))
 	{
 		MessageBox(NULL, TEXT("Failed To Create App Log File ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
 		exit(EXIT_FAILURE);
@@ -147,18 +147,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 			//! COM Library
 			hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
-			switch(errorStatus)
-			{
-				case -1: PrintLog(gpFile_AppLog, "Failed to obtain IDesaturation Interface !!!"); break;
-				case -2: PrintLog(gpFile_AppLog, "Failed to obtain ISepia Interface !!!"); break;
-				case -3: PrintLog(gpFile_AppLog, "Failed to obtain IColorInversion Interface !!!"); break;
-				default: break;
-			}
 			if (errorStatus < 0)
 			{
 				MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
 				if (DEBUG == 1)
-					GetErrorMessage(hr);
+					GetErrorMessage(hr, FALSE, NULL);
+				formattedTime = GetFormattedTime();
+				switch(errorStatus)
+				{
+					case -1: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+					case -2: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+					case -3: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IColorInversion Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+					default: break;
+				}
 				DestroyWindow(hwnd); 
 			}
 
@@ -361,8 +362,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			DeleteImageObject(&hOriginalBitmap);
 			DeleteImageObject(&hBitmap);
 
-			CloseLogFile(gpFile_UserLog);
-			CloseLogFile(gpFile_AppLog);
+			CloseLogFile(&gpFile_UserLog);
+			CloseLogFile(&gpFile_AppLog);
 
 			PostQuitMessage(0);
 
@@ -554,24 +555,24 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 					GetDlgItemText(hDlg, ID_MNAME, user.middleName, TEXT_LENGTH);
 					GetDlgItemText(hDlg, ID_SNAME, user.surname, TEXT_LENGTH);
 					
-					//! Perform Spot Validation
+					//! Perform Data Validation
 
 
-					if (!CreateOpenLogFile(gpFile_UserLog, "User-Log.log", "w"))
+					if (!CreateOpenLogFile(&gpFile_UserLog, "User-Log.log", "w"))
 					{
 						MessageBox(NULL, TEXT("Failed To Create User Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
 						exit(EXIT_FAILURE);
 					}
 
-					GetLocalTime(&systemTime);
-					
-					fprintf(gpFile_UserLog, "Image Editor v1.0 User Registration Log\n");
-					fprintf(gpFile_UserLog, "---------------------------------------------------------------\n");
-					fprintf(gpFile_UserLog, "First Name : %s\n", user.firstName);
-					fprintf(gpFile_UserLog, "Middle Name : %s\n", user.middleName);
-					fprintf(gpFile_UserLog, "Surname : %s\n", user.surname);
-					fprintf(gpFile_UserLog, "Date and Time : %02d:%02d\n", systemTime.wHour, systemTime.wMinute);
-					fprintf(gpFile_UserLog, "---------------------------------------------------------------\n");
+					formattedTime = GetFormattedTime();
+
+					PrintLog(&gpFile_UserLog, "Image Editor v1.0 User Registration Log\n");
+					PrintLog(&gpFile_UserLog, "---------------------------------------------------------------\n");
+					PrintLog(&gpFile_UserLog, "First Name : %s\n", user.firstName);
+					PrintLog(&gpFile_UserLog, "Middle Name : %s\n", user.middleName);
+					PrintLog(&gpFile_UserLog, "Surname : %s\n", user.surname);
+					PrintLog(&gpFile_UserLog, "Date and Time : %02d-%02d-%d %02d:%02d:%02d %s\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
+					PrintLog(&gpFile_UserLog, "---------------------------------------------------------------\n");
 
 					bUserRegistered = TRUE;
 
