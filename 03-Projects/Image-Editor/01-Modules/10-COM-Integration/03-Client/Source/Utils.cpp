@@ -77,8 +77,6 @@ BOOL RegisterServerLibararies(void)
     }
     else
     {
-        if (bKey1_Exists) DebugMsg(TEXT("Key 1 Exists"));
-        if (bKey2_Exists) DebugMsg(TEXT("Key 2 Exists"));
         RegCloseKey(hCLSIDKeys[1]);
         RegCloseKey(hCLSIDKeys[0]);
     }
