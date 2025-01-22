@@ -124,7 +124,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	//? User Registration
 	int checkFileStatus = -1;
 	char *lFileName = NULL;
-	char fileName[] = "F:\\Win32-COM\\Windows-Native-Development\\03-Projects\\Image-Editor\\10-COM-Integration\\03-Client\\User-Log.log";
+	char fileName[] = "E:\Development\Win32-COM\Windows-Native-Development\03-Projects\Image-Editor\01-Modules\10-COM-Integration\03-Client\User-Log.log";
 	
 	// Code
 	switch (iMsg)
