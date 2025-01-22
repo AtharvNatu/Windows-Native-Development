@@ -2,27 +2,36 @@
 
 //! COM Related
 //*--------------------------------------------------------------------------------------------
-BOOL RegisterDLL(char *szServerName)
+BOOL RegisterDLL(TCHAR *szServerName)
 {
     // Variable Declarations
-    char szShellCommand[512];
+    HMODULE hDll = NULL;
+    typedef HRESULT(__stdcall *DLLRegisterServerProc)(void);
 
     // Code
-    snprintf(szShellCommand, sizeof(szShellCommand), "regsvr32.exe \"%s\"", szServerName);
+    hDll = LoadLibrary(szServerName);
+    if (hDll == NULL)
+        return FALSE;
 
-    HINSTANCE hInst = ShellExecute(
-        NULL,
-        "runas",
-        "regsvr32",
-        szShellCommand,
-        NULL,
-        SW_SHOW
-    );
+    DLLRegisterServerProc pDLLRegisterServer = (DLLRegisterServerProc)GetProcAddress(hDll, "DllRegisterServer");
+    if (pDLLRegisterServer == NULL)
+    {
+        FreeLibrary(hDll);
+        hDll = NULL;
+        return FALSE;
+    }
 
-    if ((INT_PTR)hInst > 32)
-        return TRUE;
+    HRESULT hr = pDLLRegisterServer();
+    if (FAILED(hr))
+    {
+        FreeLibrary(hDll);
+        hDll = NULL;
+        return FALSE;
+    }
 
-    return FALSE;
+    FreeLibrary(hDll);
+    hDll = NULL;
+    return TRUE;
 }
 
 BOOL RegisterServerLibararies(void)
@@ -68,6 +77,8 @@ BOOL RegisterServerLibararies(void)
     }
     else
     {
+        if (bKey1_Exists) DebugMsg(TEXT("Key 1 Exists"));
+        if (bKey2_Exists) DebugMsg(TEXT("Key 2 Exists"));
         RegCloseKey(hCLSIDKeys[1]);
         RegCloseKey(hCLSIDKeys[0]);
     }

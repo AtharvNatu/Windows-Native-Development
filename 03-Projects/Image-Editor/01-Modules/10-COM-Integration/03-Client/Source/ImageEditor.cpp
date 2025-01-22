@@ -43,14 +43,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	TCHAR szAppName[] = TEXT("MyWindow");
 
 	//* Code
-	ZeroMemory((void*)&wndclass, sizeof(WNDCLASSEX));
-
-	//! Register Server Libraries
-	if (!RegisterServerLibararies())
-	{
-		MessageBox(NULL, TEXT("Failed To Create Install Required Library Files ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
-		exit(EXIT_FAILURE);
-	}
 
 	//! Start COM Engine
 	hr = CoInitialize(NULL);
@@ -60,12 +52,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		exit(EXIT_FAILURE);
 	}
 
-	//! App Log File
-	if (!CreateOpenLogFile(&gpFile_AppLog, "ImageEditor.log", "a+"))
-	{
-		MessageBox(NULL, TEXT("Failed To Create App Log File ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
-		exit(EXIT_FAILURE);
-	}
+	ZeroMemory((void*)&wndclass, sizeof(WNDCLASSEX));
 	
 	//* Initialization of Window Class
 	wndclass.cbSize = sizeof(WNDCLASSEX);
@@ -146,6 +133,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		case WM_CREATE:
 
 			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
+
+			//! Register Server Libraries
+			if (!RegisterServerLibararies())
+			{
+				MessageBox(NULL, TEXT("Failed To Create Install Required Library Files ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+				exit(EXIT_FAILURE);
+			}
+
+			//! App Log File
+			if (!CreateOpenLogFile(&gpFile_AppLog, "ImageEditor.log", "a+"))
+			{
+				MessageBox(NULL, TEXT("Failed To Create App Log File ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+				exit(EXIT_FAILURE);
+			}
 
 			//! Load Cursors
 			bCursorsLoaded = LoadAppCursors(&hPickerCursor, &hDefaultCursor);

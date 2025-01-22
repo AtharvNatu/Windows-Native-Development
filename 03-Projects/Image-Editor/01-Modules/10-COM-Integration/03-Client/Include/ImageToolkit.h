@@ -4,7 +4,6 @@
 #include <windowsx.h>
 #include <strsafe.h>
 #include <Shlwapi.h>
-#include <shellapi.h>
 
 //! App Mode
 #define DEBUG                               0
