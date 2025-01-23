@@ -154,20 +154,52 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				DestroyWindow(hwnd);
 
 			//! COM Library
-			hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
-			if (errorStatus < 0)
+			// hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
+			// if (errorStatus < 0)
+			// {
+			// 	MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+			// 	if (DEBUG == 1)
+			// 		GetErrorMessage(hr, FALSE, NULL);
+			// 	formattedTime = GetFormattedTime();
+			// 	switch(errorStatus)
+			// 	{
+			// 		case -1: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+			// 		case -2: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+			// 		case -3: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IColorInversion Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+			// 		default: break;
+			// 	}
+			// 	DestroyWindow(hwnd); 
+			// }
+
+			hr = CoCreateInstance(
+				CLSID_ImageEditor,
+				NULL,						
+				CLSCTX_INPROC_SERVER,
+				IID_Desaturation,
+				(void**)&pIDesaturation
+			);
+			if (FAILED(hr))
 			{
-				MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
-				if (DEBUG == 1)
-					GetErrorMessage(hr, FALSE, NULL);
-				formattedTime = GetFormattedTime();
-				switch(errorStatus)
-				{
-					case -1: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-					case -2: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-					case -3: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IColorInversion Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-					default: break;
-				}
+				PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
+				DebugMsg(TEXT("Failed"));
+				DestroyWindow(hwnd); 
+			}
+
+			//! Sepia
+			hr = pIDesaturation->QueryInterface(IID_ISepia, (void**)&pISepia);
+			if (FAILED(hr))
+			{
+				PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
+				DebugMsg(TEXT("Failed"));
+				DestroyWindow(hwnd); 
+			}
+
+			//! Color Inversion
+			hr = pIDesaturation->QueryInterface(IID_IColorInversion, (void**)&pIColorInversion);
+			if (FAILED(hr))
+			{
+				PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain INegative Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
+				DebugMsg(TEXT("Failed"));
 				DestroyWindow(hwnd); 
 			}
 
@@ -193,7 +225,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 					SetBkColor(hdc, RGB(197, 211, 224));
 					SetTextColor(hdc, RGB(85, 136, 198));
-					DrawText(hdc, "Click On File Menu And Select 'Open' To Open An Image File", -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+					DrawText(hdc, TEXT("Click On File Menu And Select 'Open' To Open An Image File"), -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 					SelectObject(hdc, hOldFont);
 					DeleteObject(hFont);
 				}
@@ -232,8 +264,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
 							{
 								// Get color from the pixel at co-ordinate (X-Column,Y-Row)
+								// COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
+								// pIDesaturation->Desaturation(originalPixelColor, &desaturatedPixelColor);
+								// SetPixel(hdc, xColumn, yRow, desaturatedPixelColor);
 								COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-								pIDesaturation->Desaturation(originalPixelColor, &desaturatedPixelColor);
+
+								unsigned int originalR = GetRValue(originalPixelColor);
+								unsigned int originalG = GetGValue(originalPixelColor);
+								unsigned int originalB = GetBValue(originalPixelColor);
+
+								unsigned int desaturatedR = (unsigned int)((float)originalR * 0.3f);
+								unsigned int desaturatedG = (unsigned int)((float)originalG * 0.59f);
+								unsigned int desaturatedB = (unsigned int)((float)originalB * 0.11f);
+
+								unsigned int finalDesaturatedColor = desaturatedR + desaturatedG + desaturatedB;
+								COLORREF desaturatedPixelColor = RGB(finalDesaturatedColor, finalDesaturatedColor, finalDesaturatedColor);
+
 								SetPixel(hdc, xColumn, yRow, desaturatedPixelColor);
 							}
 						}
@@ -340,8 +386,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							MessageBox(NULL, TEXT("Failed To Load Bitmap ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
 							DestroyWindow(hwnd);
 						}
-
-						DebugMsg(TEXT("Image Loaded"));
 
 						bImageLoaded = TRUE;
 

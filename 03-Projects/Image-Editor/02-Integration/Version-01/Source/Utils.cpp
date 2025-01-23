@@ -199,11 +199,11 @@ BOOL LoadImageFromExplorer(HBITMAP *hBitmap, HBITMAP *hOriginalBitmap, TCHAR *sz
 {
     // Code
     *hBitmap = (HBITMAP)LoadImage(NULL, szImagePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-    if (hBitmap == NULL)
+    if (*hBitmap == NULL)
         return FALSE;
 
-    *hOriginalBitmap = (HBITMAP)CopyImage(hBitmap, IMAGE_BITMAP, 0, 0, LR_COPYRETURNORG);
-    if (hOriginalBitmap == NULL)
+    *hOriginalBitmap = (HBITMAP)CopyImage(*hBitmap, IMAGE_BITMAP, 0, 0, LR_COPYRETURNORG);
+    if (*hOriginalBitmap == NULL)
         return FALSE;
 
     return TRUE;
