@@ -1,8 +1,10 @@
 #include "../Include/Utils.h"
 
 //* Global Variables
+HWND hwndControlsDialog = NULL;
 HINSTANCE ghInstance = NULL;
 HRESULT hr = S_OK;
+HMENU hMenu = NULL;
 HBITMAP hBitmap = NULL, hOriginalBitmap = NULL;
 HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
 
@@ -16,6 +18,7 @@ BOOL bInversion = FALSE;
 BOOL bResetImage = FALSE;
 BOOL bColorPick = FALSE;
 BOOL bUserRegistered = FALSE;
+BOOL bCheckValidText = FALSE;
 
 FILE* gpFile_UserLog = NULL;
 FILE* gpFile_AppLog = NULL;
@@ -94,8 +97,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	//* Message Loop
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		if (hwndControlsDialog == NULL || (IsDialogMessage(hwndControlsDialog, &msg) == 0))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
 	}
 
 	//! Stop COM Engine
@@ -121,11 +127,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	int errorStatus = 0;
 	BOOL bCursorsLoaded = FALSE;
 	
-	//? User Registration
-	int checkFileStatus = -1;
-	char *lFileName = NULL;
-	char fileName[] = "F:\\Win32-COM\\Windows-Native-Development\\03-Projects\\Image-Editor\\01-Modules\\10-COM-Integration\\03-Client\\User-Log.log";
-	
 	// Code
 	switch (iMsg)
 	{
@@ -134,10 +135,21 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
 
+			//! Load Cursors
+			bCursorsLoaded = LoadAppCursors(&hPickerCursor, &hDefaultCursor);
+			if (!bCursorsLoaded)
+				DestroyWindow(hwnd);
+
+			//! Menu Settings
+			hMenu = LoadMenu(ghInstance, MAKEINTRESOURCE(IE_MENU));
+			SetMenu(hwnd, hMenu);
+			EnableMenuItem(hMenu, IDM_EDIT, MF_BYCOMMAND | MF_DISABLED);
+			DrawMenuBar(hwnd);
+
 			//! Register Server Libraries
 			if (!RegisterServerLibararies())
 			{
-				MessageBox(NULL, TEXT("Failed To Create Install Required Library Files ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+				MessageBox(NULL, TEXT("Failed To Install Required Library Files ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
 				exit(EXIT_FAILURE);
 			}
 
@@ -148,58 +160,21 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				exit(EXIT_FAILURE);
 			}
 
-			//! Load Cursors
-			bCursorsLoaded = LoadAppCursors(&hPickerCursor, &hDefaultCursor);
-			if (!bCursorsLoaded)
-				DestroyWindow(hwnd);
-
 			//! COM Library
-			// hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
-			// if (errorStatus < 0)
-			// {
-			// 	MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
-			// 	if (DEBUG == 1)
-			// 		GetErrorMessage(hr, FALSE, NULL);
-			// 	formattedTime = GetFormattedTime();
-			// 	switch(errorStatus)
-			// 	{
-			// 		case -1: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-			// 		case -2: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-			// 		case -3: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IColorInversion Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-			// 		default: break;
-			// 	}
-			// 	DestroyWindow(hwnd); 
-			// }
-
-			hr = CoCreateInstance(
-				CLSID_ImageEditor,
-				NULL,						
-				CLSCTX_INPROC_SERVER,
-				IID_Desaturation,
-				(void**)&pIDesaturation
-			);
-			if (FAILED(hr))
+			hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
+			if (errorStatus < 0)
 			{
-				PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
-				DebugMsg(TEXT("Failed"));
-				DestroyWindow(hwnd); 
-			}
-
-			//! Sepia
-			hr = pIDesaturation->QueryInterface(IID_ISepia, (void**)&pISepia);
-			if (FAILED(hr))
-			{
-				PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
-				DebugMsg(TEXT("Failed"));
-				DestroyWindow(hwnd); 
-			}
-
-			//! Color Inversion
-			hr = pIDesaturation->QueryInterface(IID_IColorInversion, (void**)&pIColorInversion);
-			if (FAILED(hr))
-			{
-				PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain INegative Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
-				DebugMsg(TEXT("Failed"));
+				MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+				if (DEBUG == 1)
+					GetErrorMessage(hr, FALSE, NULL);
+				formattedTime = GetFormattedTime();
+				switch(errorStatus)
+				{
+					case -1: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+					case -2: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+					case -3: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IColorInversion Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+					default: break;
+				}
 				DestroyWindow(hwnd); 
 			}
 
@@ -342,17 +317,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		break;
 
 		case WM_SETFOCUS:
-
-			lFileName = fileName;
-			checkFileStatus = PathFileExists(lFileName);
-			if (checkFileStatus == 1)
-				bUserRegistered = TRUE;
-			else
-				bUserRegistered = FALSE;
-
+			bUserRegistered = CheckUserStatus("User-Log.log");
 			if (!bUserRegistered)
-				DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hwnd, RegisterDialogProc);
-				
+				DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hwnd, RegisterDialogProc);		
 		break;
 
 		case WM_LBUTTONDOWN:
@@ -361,6 +328,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				giPixelX = GET_X_LPARAM(lParam);
 				giPixelY = GET_Y_LPARAM(lParam);
 				bColorPick = TRUE;
+				InvalidateRect(hwndControlsDialog, NULL, FALSE);
 			}
 		break;
 
@@ -389,6 +357,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 						bImageLoaded = TRUE;
 
+						EnableMenuItem(hMenu, IDM_EDIT, MF_BYCOMMAND | MF_ENABLED);
+						DrawMenuBar(hwnd);
+
 						InvalidateRect(hwnd, NULL, TRUE);
 					}
 
@@ -399,7 +370,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				break;
 
 				case IDM_EDIT:
-					DialogBox(ghInstance, MAKEINTRESOURCE(IE_DLG), hwnd, ControlsDialogProc);
+					hwndControlsDialog = CreateDialog(ghInstance, MAKEINTRESOURCE(IE_DLG), hwnd, ControlsDialogProc);
 				break;
 
 				case IDM_ABOUT:
@@ -434,9 +405,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	// Variable Declarations
-	HDC hdc = NULL, hdcPaint = NULL;
+	HDC hdc = NULL, hdcPaint = NULL, hdcParent = NULL;
+	HWND hwndParent = NULL;
 	HBRUSH hBrush = NULL;
 	PAINTSTRUCT ps;
+	static char rgbBuffer[5];
 
 	// Code
 	switch(iMsg)
@@ -459,18 +432,42 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			{
 				if (bColorPick)
 				{
-					COLORREF pickedPixel = GetPixel(hdc, giPixelX, giPixelY);
+					hwndParent = GetParent(hDlg);
+					if (hwndParent == NULL)
+					{
+						PrintLog(&gpFile_AppLog, "Failed To Get Parent Handle in %s !!!\n", __func__);
+						return (INT_PTR)FALSE;
+					}
+
+					hdcParent = GetDC(hwndParent);
+					if (hdcParent == NULL)
+					{
+						PrintLog(&gpFile_AppLog, "Failed To Get Parent DC in %s !!!\n", __func__);
+						return (INT_PTR)FALSE;
+					}
+
+					COLORREF pickedPixel = GetPixel(hdcParent, giPixelX, giPixelY);
 					
 					unsigned int rValue = GetRValue(pickedPixel);
 					unsigned int gValue = GetGValue(pickedPixel);
 					unsigned int bValue = GetBValue(pickedPixel);
 
-					RECT colorRect = { 780, 150, 840, 210 };
+					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", rValue);
+					SetDlgItemText(hDlg, ID_IMG_R, rgbBuffer);
+					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", gValue);
+					SetDlgItemText(hDlg, ID_IMG_G, rgbBuffer);
+					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", bValue);
+					SetDlgItemText(hDlg, ID_IMG_B, rgbBuffer);
+
+					RECT colorRect = { 780, 90, 840, 150 };
 					HBRUSH hBrush = CreateSolidBrush(RGB(rValue, gValue, bValue));
-					FillRect(hdc, &colorRect, hBrush);
+					FillRect(hdcPaint, &colorRect, hBrush);
 					DeleteObject(hBrush);
 
 					bColorPick = FALSE;
+					ReleaseDC(hwndParent, hdcParent);
+					hdcParent = NULL;
+					hwndParent = NULL;
 				}
 			}
 			if (hdcPaint)
@@ -524,20 +521,18 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 				case ID_OK:
 				case ID_EXIT:
 					if (hdc)
-					{
 						hdc = NULL;
-					}
-					EndDialog(hDlg, (INT_PTR)0);
+					hwndControlsDialog = NULL;
+					DestroyWindow(hDlg);
 				break;
 			}
 		return (INT_PTR)TRUE;
 
 		case WM_CLOSE:
 			if (hdc)
-			{
 				hdc = NULL;
-			}
-			EndDialog(hDlg, (INT_PTR)0);
+			hwndControlsDialog = NULL;
+			DestroyWindow(hDlg);
 		return (INT_PTR)TRUE;
 
 		default:
@@ -610,29 +605,38 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 					GetDlgItemText(hDlg, ID_SNAME, user.surname, TEXT_LENGTH);
 					
 					//! Perform Data Validation
+					bCheckValidText = ValidateUserData(user.firstName);
+					bCheckValidText = ValidateUserData(user.middleName);
+					bCheckValidText = ValidateUserData(user.surname);
 
-
-					if (!CreateOpenLogFile(&gpFile_UserLog, "User-Log.log", "w"))
+					if (bCheckValidText)
 					{
-						MessageBox(NULL, TEXT("Failed To Create User Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
-						exit(EXIT_FAILURE);
+						if (!CreateOpenLogFile(&gpFile_UserLog, "User-Log.log", "w"))
+						{
+							MessageBox(NULL, TEXT("Failed To Create User Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
+							exit(EXIT_FAILURE);
+						}
+
+						formattedTime = GetFormattedTime();
+
+						PrintLog(&gpFile_UserLog, "Image Editor v1.0 User Registration Log\n");
+						PrintLog(&gpFile_UserLog, "---------------------------------------------------------------\n");
+						PrintLog(&gpFile_UserLog, "First Name : %s\n", user.firstName);
+						PrintLog(&gpFile_UserLog, "Middle Name : %s\n", user.middleName);
+						PrintLog(&gpFile_UserLog, "Surname : %s\n", user.surname);
+						PrintLog(&gpFile_UserLog, "Date and Time : %02d-%02d-%d %02d:%02d:%02d %s\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
+						PrintLog(&gpFile_UserLog, "---------------------------------------------------------------\n");
+
+						bUserRegistered = TRUE;
+
+						MessageBox(NULL, TEXT("User Registered Successfully ..."), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
+						EndDialog(hDlg, (INT_PTR)0);
 					}
-
-					formattedTime = GetFormattedTime();
-
-					PrintLog(&gpFile_UserLog, "Image Editor v1.0 User Registration Log\n");
-					PrintLog(&gpFile_UserLog, "---------------------------------------------------------------\n");
-					PrintLog(&gpFile_UserLog, "First Name : %s\n", user.firstName);
-					PrintLog(&gpFile_UserLog, "Middle Name : %s\n", user.middleName);
-					PrintLog(&gpFile_UserLog, "Surname : %s\n", user.surname);
-					PrintLog(&gpFile_UserLog, "Date and Time : %02d-%02d-%d %02d:%02d:%02d %s\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm);
-					PrintLog(&gpFile_UserLog, "---------------------------------------------------------------\n");
-
-					bUserRegistered = TRUE;
-
-					MessageBox(NULL, TEXT("User Registered Successfully ..."), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
-
-					EndDialog(hDlg, (INT_PTR)0);
+					else
+					{
+						MessageBox(NULL, TEXT("Failed To Register User !!!"), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
+					}
+					
 				break;
 			}
 		return (INT_PTR)TRUE;
@@ -641,9 +645,21 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			return (INT_PTR)CreateSolidBrush(RGB(197, 211, 224));
 
 		case WM_CTLCOLORSTATIC:
+
 			hdc = (HDC)wParam;
 			SetTextColor(hdc, RGB(0, 0, 0));
 			SetBkMode(hdc, TRANSPARENT);
+
+			if (lParam == (LPARAM)GetDlgItem(hDlg, ID_FNAME_LBL))
+			{
+				if (!bCheckValidText)
+					SetTextColor(hdc, RGB(255, 0, 0));
+				else
+					SetTextColor(hdc, RGB(100, 0, 0));
+
+				return (INT_PTR)CreateSolidBrush(RGB(197, 211, 224));
+			}
+
 		return (INT_PTR)CreateSolidBrush(RGB(197, 211, 224));
 
 		case WM_CLOSE:

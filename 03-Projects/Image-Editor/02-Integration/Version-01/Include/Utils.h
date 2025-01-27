@@ -33,10 +33,16 @@ void DeleteImageObject(HBITMAP*);
 //* File I/O
 //*--------------------------------------------------------------------------------------------
 BOOL CreateOpenLogFile(FILE**, const char*, const char*);
-void PrintLog(FILE**, const char *fmt, ...);
+void PrintLog(FILE**, const char *, ...);
 void CloseLogFile(FILE**);
 FormattedTime GetFormattedTime(void);
 OPENFILENAME OpenFileDialog(HWND);
+//*--------------------------------------------------------------------------------------------
+
+//* User Data Related
+//*--------------------------------------------------------------------------------------------
+BOOL CheckUserStatus(const char*);
+BOOL ValidateUserData(const char*);
 //*--------------------------------------------------------------------------------------------
 
 //* Error Handling

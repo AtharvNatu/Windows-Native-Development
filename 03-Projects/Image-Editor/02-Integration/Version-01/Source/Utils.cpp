@@ -321,6 +321,37 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 }
 //*--------------------------------------------------------------------------------------------
 
+//! User Data Related
+//*--------------------------------------------------------------------------------------------
+BOOL CheckUserStatus(const char* fileName)
+{
+    // Variable Declarations
+    TCHAR appPath[MAX_PATH], absoluteFilePath[MAX_PATH];
+
+    // Code
+    if (GetModuleFileName(NULL, appPath, MAX_PATH) == 0)
+        return FALSE;
+
+    PathRemoveFileSpec(appPath);
+
+    PathCombine(absoluteFilePath, appPath, fileName);
+
+    return PathFileExists(absoluteFilePath);
+}
+
+BOOL ValidateUserData(const char *szData)
+{
+	// Code
+	for (int i = 0; szData[i] != '\0'; i++)
+	{   
+		if (!isalpha((unsigned char)szData[i]))
+			return FALSE;
+	}
+    
+	return TRUE;
+}
+//*--------------------------------------------------------------------------------------------
+
 //! Error Handling
 //*--------------------------------------------------------------------------------------------
 void GetErrorMessage(HRESULT hr, BOOL bLastError, LPCTSTR lpszFunction)

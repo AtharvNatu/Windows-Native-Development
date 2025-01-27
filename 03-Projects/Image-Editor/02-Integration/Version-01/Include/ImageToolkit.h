@@ -48,6 +48,7 @@
 #define ID_FNAME                            503
 #define ID_MNAME                            504
 #define ID_SNAME                            505
+#define ID_FNAME_LBL                        506
 
 #define WINDOW_WIDTH 	800
 #define WINDOW_HEIGHT	600
