@@ -21,6 +21,8 @@ BOOL bUserRegistered = FALSE;
 BOOL bCheckValidText = FALSE;
 
 FILE* gpFile_UserLog = NULL;
+FILE* gpFile_ColorPickerLog = NULL;
+FILE* gpFile_NormalizedColorPickerLog = NULL;
 FILE* gpFile_AppLog = NULL;
 
 FormattedTime formattedTime;
@@ -34,7 +36,15 @@ typedef struct tagUser
 	char surname[TEXT_LENGTH];
 } USER;
 
+typedef struct tagRGB
+{
+	unsigned int R;
+	unsigned int G;
+	unsigned int B;
+} RGB;
+
 USER user;
+RGB rgb;
 
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -161,22 +171,54 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			//! COM Library
-			hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
-			if (errorStatus < 0)
-			{
-				MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
-				if (DEBUG == 1)
-					GetErrorMessage(hr, FALSE, NULL);
-				formattedTime = GetFormattedTime();
-				switch(errorStatus)
-				{
-					case -1: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-					case -2: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-					case -3: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IColorInversion Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
-					default: break;
-				}
-				DestroyWindow(hwnd); 
-			}
+			// hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
+			// if (errorStatus < 0)
+			// {
+			// 	MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+			// 	if (DEBUG == 1)
+			// 		GetErrorMessage(hr, FALSE, NULL);
+			// 	formattedTime = GetFormattedTime();
+			// 	switch(errorStatus)
+			// 	{
+			// 		case -1: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IDesaturation Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+			// 		case -2: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain ISepia Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+			// 		case -3: PrintLog(&gpFile_AppLog, "[%02d-%02d-%d %02d:%02d:%02d %s] Failed to obtain IColorInversion Interface !!!\n", formattedTime.day, formattedTime.month, formattedTime.year, formattedTime.hour, formattedTime.minute, formattedTime.second, formattedTime.amPm); break;
+			// 		default: break;
+			// 	}
+			// 	DestroyWindow(hwnd); 
+			// }
+
+		hr = CoCreateInstance(
+			CLSID_ImageEditor,
+			NULL,						
+			CLSCTX_INPROC_SERVER,
+			IID_Desaturation,
+			(void**)&pIDesaturation
+		);
+		if (FAILED(hr))
+		{
+			MessageBox(hwnd, TEXT("Failed to obtain IDesaturation Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+			GetErrorMessage(hr, FALSE, NULL);
+			DestroyWindow(hwnd); 
+		}
+
+		//! Sepia
+		hr = pIDesaturation->QueryInterface(IID_ISepia, (void**)&pISepia);
+		if (FAILED(hr))
+		{
+			MessageBox(hwnd, TEXT("Failed to obtain ISepia Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+			GetErrorMessage(hr, FALSE, NULL);
+			DestroyWindow(hwnd); 
+		}
+
+		//! Color Inversion
+		hr = pIDesaturation->QueryInterface(IID_IColorInversion, (void**)&pIColorInversion);
+		if (FAILED(hr))
+		{
+			MessageBox(hwnd, TEXT("Failed to obtain IColorInversion Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+			GetErrorMessage(hr, FALSE, NULL);
+			DestroyWindow(hwnd); 
+		}
 
 		break;
 
@@ -381,7 +423,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_DESTROY:
 
-			SafeInterfaceRelease(pIDesaturation, pISepia, pIColorInversion);
+			// SafeInterfaceRelease(pIDesaturation, pISepia, pIColorInversion);
+			if (pIColorInversion)
+			{
+				pIColorInversion->Release();
+				pIColorInversion = NULL;
+			}
+
+			if (pISepia)
+			{
+				pISepia->Release();
+				pISepia = NULL;
+			}
+
+			if (pIDesaturation)
+			{
+				pIDesaturation->Release();
+				pIDesaturation = NULL;
+			}
 
 			DeleteAppCursor(&hPickerCursor);
 			DeleteImageObject(&hOriginalBitmap);
@@ -409,7 +468,10 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	HWND hwndParent = NULL;
 	HBRUSH hBrush = NULL;
 	PAINTSTRUCT ps;
+
 	static char rgbBuffer[5];
+	static BOOL bExportColorPickerLog = FALSE, bExportNormalizedColorPickerLog = FALSE, bCopyToClipboard = FALSE;
+	static HGLOBAL hGlobalMem;
 
 	// Code
 	switch(iMsg)
@@ -448,21 +510,84 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 
 					COLORREF pickedPixel = GetPixel(hdcParent, giPixelX, giPixelY);
 					
-					unsigned int rValue = GetRValue(pickedPixel);
-					unsigned int gValue = GetGValue(pickedPixel);
-					unsigned int bValue = GetBValue(pickedPixel);
+					rgb.R = GetRValue(pickedPixel);
+					rgb.G = GetGValue(pickedPixel);
+					rgb.B = GetBValue(pickedPixel);
 
-					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", rValue);
+					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", rgb.R);
 					SetDlgItemText(hDlg, ID_IMG_R, rgbBuffer);
-					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", gValue);
+					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", rgb.G);
 					SetDlgItemText(hDlg, ID_IMG_G, rgbBuffer);
-					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", bValue);
+					snprintf(rgbBuffer, sizeof(rgbBuffer), "%d", rgb.B);
 					SetDlgItemText(hDlg, ID_IMG_B, rgbBuffer);
 
 					RECT colorRect = { 780, 90, 840, 150 };
-					HBRUSH hBrush = CreateSolidBrush(RGB(rValue, gValue, bValue));
+					HBRUSH hBrush = CreateSolidBrush(RGB(rgb.R, rgb.G, rgb.B));
 					FillRect(hdcPaint, &colorRect, hBrush);
 					DeleteObject(hBrush);
+
+					if (bExportColorPickerLog)
+					{
+						formattedTime = GetFormattedTime();
+						PrintLog(
+							&gpFile_ColorPickerLog, 
+							"[%02d-%02d-%d %02d:%02d:%02d %s] Picked Color (RGB) : %d, %d, %d\n", 
+							formattedTime.day, 
+							formattedTime.month, 
+							formattedTime.year, 
+							formattedTime.hour, 
+							formattedTime.minute, 
+							formattedTime.second, 
+							formattedTime.amPm,
+							rgb.R,
+							rgb.G,
+							rgb.B
+						);
+					}
+
+					if (bExportNormalizedColorPickerLog)
+					{
+						formattedTime = GetFormattedTime();
+						PrintLog(
+							&gpFile_NormalizedColorPickerLog, 
+							"[%02d-%02d-%d %02d:%02d:%02d %s] Normalized Picked Color (RGB) : %f, %f, %f\n", 
+							formattedTime.day, 
+							formattedTime.month, 
+							formattedTime.year, 
+							formattedTime.hour, 
+							formattedTime.minute, 
+							formattedTime.second, 
+							formattedTime.amPm,
+							rgb.R / 255.0f,
+							rgb.G / 255.0f,
+							rgb.B / 255.0f
+						);
+					}
+
+					if (bCopyToClipboard)
+					{
+						TCHAR szClipboardData[30];
+						wsprintf(szClipboardData, "R : %u, G : %u, B : %u", rgb.R, rgb.G, rgb.B);
+						MessageBox(hDlg, szClipboardData, TEXT("Test"), MB_OK);
+						
+						size_t bufferSize = (_tcslen(szClipboardData) + 1) * sizeof(TCHAR);
+	
+						hGlobalMem = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, bufferSize);
+						if (hGlobalMem)
+						{
+							TCHAR *pMem = (TCHAR*)GlobalLock(hGlobalMem);
+							{
+								_tcscpy(pMem, szClipboardData);
+							}
+							GlobalUnlock(hGlobalMem);
+
+							OpenClipboard(hDlg);
+							EmptyClipboard();
+							SetClipboardData(CF_TEXT, hGlobalMem);
+							CloseClipboard();
+							GlobalFree(hGlobalMem);
+						}
+					}
 
 					bColorPick = FALSE;
 					ReleaseDC(hwndParent, hdcParent);
@@ -514,12 +639,43 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 					InvalidateRect(GetParent(hDlg), NULL, TRUE);
 				break;
 
+				case ID_CHK_PICK_LOG:
+					if (IsDlgButtonChecked(hDlg, ID_CHK_PICK_LOG))
+					{
+						bExportColorPickerLog = TRUE;
+						if (!CreateOpenLogFile(&gpFile_ColorPickerLog, "Color-Picker-Log.log", "a+"))
+						{
+							MessageBox(NULL, TEXT("Failed To Create Color Picker Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
+							exit(EXIT_FAILURE);
+						}	
+					}
+				break;
+
+				case ID_CHK_PICK_LOG_NL:
+					if (IsDlgButtonChecked(hDlg, ID_CHK_PICK_LOG_NL))
+					{
+						bExportNormalizedColorPickerLog = TRUE;
+						if (!CreateOpenLogFile(&gpFile_NormalizedColorPickerLog, "Normalized-Color-Picker-Log.log", "a+"))
+						{
+							MessageBox(NULL, TEXT("Failed To Create Normalized Color Picker Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
+							exit(EXIT_FAILURE);
+						}
+					}
+				break;
+
+				case ID_CHK_PICK_CLP:
+					if (IsDlgButtonChecked(hDlg, ID_CHK_PICK_LOG))
+						bCopyToClipboard = TRUE;
+				break;
+
 				case ID_ABOUT:
 					DialogBox(ghInstance, MAKEINTRESOURCE(ABOUT_DLG), hDlg, AboutDialogProc);
 				break;
 
 				case ID_OK:
 				case ID_EXIT:
+					CloseLogFile(&gpFile_NormalizedColorPickerLog);
+					CloseLogFile(&gpFile_ColorPickerLog);
 					if (hdc)
 						hdc = NULL;
 					hwndControlsDialog = NULL;
@@ -529,6 +685,8 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		return (INT_PTR)TRUE;
 
 		case WM_CLOSE:
+			CloseLogFile(&gpFile_NormalizedColorPickerLog);
+			CloseLogFile(&gpFile_ColorPickerLog);
 			if (hdc)
 				hdc = NULL;
 			hwndControlsDialog = NULL;

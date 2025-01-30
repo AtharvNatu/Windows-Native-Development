@@ -228,8 +228,7 @@ BOOL CreateOpenLogFile(FILE **ppFile, const char *szFileName, const char *szMode
     // Code
     *ppFile = fopen(szFileName, szMode);
     if (*ppFile == NULL)
-        return FALSE;
-
+        return FALSE;   
     return TRUE;
 }
 

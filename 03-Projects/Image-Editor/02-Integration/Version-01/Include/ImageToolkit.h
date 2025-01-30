@@ -5,6 +5,7 @@
 #include <strsafe.h>
 #include <Shlwapi.h>
 
+
 //! App Mode
 #define DEBUG                               0
 
