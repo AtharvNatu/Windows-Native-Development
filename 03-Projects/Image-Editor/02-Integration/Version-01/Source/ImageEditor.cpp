@@ -136,6 +136,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	static unsigned int resizedWindowWidth = 0, resizedWindowHeight = 0;
 	int errorStatus = 0;
 	BOOL bCursorsLoaded = FALSE;
+
+	static LPMEASUREITEMSTRUCT lpMeasureItem;
+	static LPDRAWITEMSTRUCT lpDrawItem;
 	
 	// Code
 	switch (iMsg)
@@ -148,7 +151,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			//! Load Cursors
 			bCursorsLoaded = LoadAppCursors(&hPickerCursor, &hDefaultCursor);
 			if (!bCursorsLoaded)
+			{
 				DestroyWindow(hwnd);
+				hwnd = NULL;
+			}
 
 			//! Menu Settings
 			hMenu = LoadMenu(ghInstance, MAKEINTRESOURCE(IE_MENU));
@@ -188,37 +194,40 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			// 	DestroyWindow(hwnd); 
 			// }
 
-		hr = CoCreateInstance(
-			CLSID_ImageEditor,
-			NULL,						
-			CLSCTX_INPROC_SERVER,
-			IID_Desaturation,
-			(void**)&pIDesaturation
-		);
-		if (FAILED(hr))
-		{
-			MessageBox(hwnd, TEXT("Failed to obtain IDesaturation Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
-			GetErrorMessage(hr, FALSE, NULL);
-			DestroyWindow(hwnd); 
-		}
+			hr = CoCreateInstance(
+				CLSID_ImageEditor,
+				NULL,						
+				CLSCTX_INPROC_SERVER,
+				IID_Desaturation,
+				(void**)&pIDesaturation
+			);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain IDesaturation Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr, FALSE, NULL);
+				DestroyWindow(hwnd); 
+				hwnd = NULL;
+			}
 
-		//! Sepia
-		hr = pIDesaturation->QueryInterface(IID_ISepia, (void**)&pISepia);
-		if (FAILED(hr))
-		{
-			MessageBox(hwnd, TEXT("Failed to obtain ISepia Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
-			GetErrorMessage(hr, FALSE, NULL);
-			DestroyWindow(hwnd); 
-		}
+			//! Sepia
+			hr = pIDesaturation->QueryInterface(IID_ISepia, (void**)&pISepia);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain ISepia Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr, FALSE, NULL);
+				DestroyWindow(hwnd); 
+				hwnd = NULL;
+			}
 
-		//! Color Inversion
-		hr = pIDesaturation->QueryInterface(IID_IColorInversion, (void**)&pIColorInversion);
-		if (FAILED(hr))
-		{
-			MessageBox(hwnd, TEXT("Failed to obtain IColorInversion Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
-			GetErrorMessage(hr, FALSE, NULL);
-			DestroyWindow(hwnd); 
-		}
+			//! Color Inversion
+			hr = pIDesaturation->QueryInterface(IID_IColorInversion, (void**)&pIColorInversion);
+			if (FAILED(hr))
+			{
+				MessageBox(hwnd, TEXT("Failed to obtain IColorInversion Interface"), TEXT("COM Error"), MB_ICONERROR | MB_OK);
+				GetErrorMessage(hr, FALSE, NULL);
+				DestroyWindow(hwnd); 
+				hwnd = NULL;
+			}
 
 		break;
 
@@ -241,7 +250,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					CreateAppFont(&hFont, TEXT("Poppins"), 36);
 					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 					SetBkColor(hdc, RGB(197, 211, 224));
-					SetTextColor(hdc, RGB(85, 136, 198));
+					SetTextColor(hdc, RGB(44, 156, 242));
 					DrawText(hdc, TEXT("Click On File Menu And Select 'Open' To Open An Image File"), -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 					SelectObject(hdc, hOldFont);
 					DeleteObject(hFont);
@@ -281,22 +290,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
 							{
 								// Get color from the pixel at co-ordinate (X-Column,Y-Row)
-								// COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-								// pIDesaturation->Desaturation(originalPixelColor, &desaturatedPixelColor);
-								// SetPixel(hdc, xColumn, yRow, desaturatedPixelColor);
 								COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-
-								unsigned int originalR = GetRValue(originalPixelColor);
-								unsigned int originalG = GetGValue(originalPixelColor);
-								unsigned int originalB = GetBValue(originalPixelColor);
-
-								unsigned int desaturatedR = (unsigned int)((float)originalR * 0.3f);
-								unsigned int desaturatedG = (unsigned int)((float)originalG * 0.59f);
-								unsigned int desaturatedB = (unsigned int)((float)originalB * 0.11f);
-
-								unsigned int finalDesaturatedColor = desaturatedR + desaturatedG + desaturatedB;
-								COLORREF desaturatedPixelColor = RGB(finalDesaturatedColor, finalDesaturatedColor, finalDesaturatedColor);
-
+								pIDesaturation->Desaturation(originalPixelColor, &desaturatedPixelColor);
 								SetPixel(hdc, xColumn, yRow, desaturatedPixelColor);
 							}
 						}
@@ -345,17 +340,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		break;
 
 		case WM_MOUSEMOVE:
-			//! For Color Picking
-			if (bImageLoaded)
-			{
-				unsigned int pickedPixelX = GET_X_LPARAM(lParam);
-				unsigned int pickedPixelY = GET_Y_LPARAM(lParam);
+			// if (bImageLoaded)
+			// {
+			// 	unsigned int pickedPixelX = GET_X_LPARAM(lParam);
+			// 	unsigned int pickedPixelY = GET_Y_LPARAM(lParam);
 
-				if (pickedPixelX >= 0 && pickedPixelX <= resizedWindowWidth && pickedPixelY >= 0 && pickedPixelY <= resizedWindowHeight)
-					SetCursor(hPickerCursor);
-				else
-					SetCursor(hDefaultCursor);
-			}
+			// 	if (pickedPixelX >= 0 && pickedPixelX <= resizedWindowWidth && pickedPixelY >= 0 && pickedPixelY <= resizedWindowHeight)
+			// 		SetCursor(hPickerCursor);
+			// 	else
+			// 		SetCursor(hDefaultCursor);
+			// }
+			if (bImageLoaded)
+				SetCursor(hPickerCursor);
+			else
+				SetCursor(hDefaultCursor);
 		break;
 
 		case WM_SETFOCUS:
@@ -395,6 +393,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							bImageLoaded = FALSE;
 							MessageBox(NULL, TEXT("Failed To Load Bitmap ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
 							DestroyWindow(hwnd);
+							hwnd = NULL;
 						}
 
 						bImageLoaded = TRUE;
@@ -409,6 +408,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 				case IDM_EXIT:
 					DestroyWindow(hwnd);
+					hwnd = NULL;
 				break;
 
 				case IDM_EDIT:
@@ -470,8 +470,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	PAINTSTRUCT ps;
 
 	static char rgbBuffer[5];
-	static BOOL bExportColorPickerLog = FALSE, bExportNormalizedColorPickerLog = FALSE, bCopyToClipboard = FALSE;
-	static HGLOBAL hGlobalMem;
+	static BOOL bExportColorPickerLog = FALSE, bExportNormalizedColorPickerLog = FALSE;
 
 	// Code
 	switch(iMsg)
@@ -564,31 +563,6 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						);
 					}
 
-					if (bCopyToClipboard)
-					{
-						TCHAR szClipboardData[30];
-						wsprintf(szClipboardData, "R : %u, G : %u, B : %u", rgb.R, rgb.G, rgb.B);
-						MessageBox(hDlg, szClipboardData, TEXT("Test"), MB_OK);
-						
-						size_t bufferSize = (_tcslen(szClipboardData) + 1) * sizeof(TCHAR);
-	
-						hGlobalMem = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, bufferSize);
-						if (hGlobalMem)
-						{
-							TCHAR *pMem = (TCHAR*)GlobalLock(hGlobalMem);
-							{
-								_tcscpy(pMem, szClipboardData);
-							}
-							GlobalUnlock(hGlobalMem);
-
-							OpenClipboard(hDlg);
-							EmptyClipboard();
-							SetClipboardData(CF_TEXT, hGlobalMem);
-							CloseClipboard();
-							GlobalFree(hGlobalMem);
-						}
-					}
-
 					bColorPick = FALSE;
 					ReleaseDC(hwndParent, hdcParent);
 					hdcParent = NULL;
@@ -605,10 +579,6 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		case WM_COMMAND:
 			switch(LOWORD(wParam))
 			{
-				case ID_REGISTER:
-					DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hDlg, RegisterDialogProc);
-				break;
-
 				case ID_APPLY:
 					if (IsDlgButtonChecked(hDlg, ID_RB_DESAT))
 					{
@@ -661,11 +631,6 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 							exit(EXIT_FAILURE);
 						}
 					}
-				break;
-
-				case ID_CHK_PICK_CLP:
-					if (IsDlgButtonChecked(hDlg, ID_CHK_PICK_LOG))
-						bCopyToClipboard = TRUE;
 				break;
 
 				case ID_ABOUT:

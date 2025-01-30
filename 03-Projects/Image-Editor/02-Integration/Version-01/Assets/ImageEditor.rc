@@ -7,8 +7,8 @@ IE_MENU MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Open",                                   IDM_OPEN
-        MENUITEM "&Exit",                                   IDM_EXIT
+        MENUITEM "&Open Image",                                   IDM_OPEN
+        MENUITEM "&Exit Application",                             IDM_EXIT
     END
 
     POPUP "&Edit"
@@ -46,7 +46,6 @@ BEGIN
         CTEXT "B",                                                                          -1, 323, 42, 5, 8
         AUTOCHECKBOX "Export Picked Colors",                ID_CHK_PICK_LOG                 225, 50, 100, 20
         AUTOCHECKBOX "Export Normalized Picked Colors",     ID_CHK_PICK_LOG_NL              225, 65, 130, 20
-        AUTOCHECKBOX "Copy To Clipboard",                   ID_CHK_PICK_CLP                 225, 80, 130, 20
 
     DEFPUSHBUTTON "About",                                  ID_ABOUT,                       250, 120, 40, 15, WS_GROUP
     DEFPUSHBUTTON "Ok",                                     ID_OK,                          300, 120, 40, 15, WS_GROUP
