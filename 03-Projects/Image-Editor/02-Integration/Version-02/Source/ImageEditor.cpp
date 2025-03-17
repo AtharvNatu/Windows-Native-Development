@@ -79,8 +79,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wndclass.lpszMenuName = MAKEINTRESOURCE(IE_MENU);
 	wndclass.hbrBackground = CreateSolidBrush(BLUE_BG);
 	wndclass.hInstance = hInstance;
-	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
-	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(ADN_ICON));
+	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IE_APP_ICON));
+	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IE_APP_ICON));
 	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
 
 	//* Register the above created class
@@ -472,7 +472,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	PAINTSTRUCT ps;
 
 	static char rgbBuffer[5];
-	static BOOL bExportColorPickerLog = FALSE, bExportNormalizedColorPickerLog = FALSE;
+	static BOOL bExportColorPickerLog = FALSE, bExportNormalizedColorPickerLog = FALSE, bCopyToClipboard = FALSE;
 
 	// Code
 	switch(iMsg)
@@ -570,6 +570,21 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 					hdcParent = NULL;
 					hwndParent = NULL;
 				}
+
+				if (bCopyToClipboard)
+				{
+					//! Copy to Clipboard
+					char buffer[40];
+					snprintf(buffer, sizeof(buffer), "R : %d, G : %d, B : %d", rgb.R, rgb.G, rgb.B);
+					const size_t len = strlen(buffer) + 1;
+					HGLOBAL hMem =  GlobalAlloc(GMEM_MOVEABLE, len);
+					memcpy(GlobalLock(hMem), buffer, len);
+					GlobalUnlock(hMem);
+					OpenClipboard(0);
+					EmptyClipboard();
+					SetClipboardData(CF_TEXT, hMem);
+					CloseClipboard();
+				}
 			}
 			if (hdcPaint)
 			{
@@ -635,6 +650,11 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 					}
 				break;
 
+				case ID_CHK_PICK_CLP:
+					if (IsDlgButtonChecked(hDlg, ID_CHK_PICK_CLP))
+						bCopyToClipboard = TRUE;
+				break;
+				
 				case ID_ABOUT:
 					DialogBox(ghInstance, MAKEINTRESOURCE(ABOUT_DLG), hDlg, AboutDialogProc);
 				break;
@@ -714,7 +734,7 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	HDC hdc = NULL;
 	static HBRUSH hBrush = NULL;
 	int controlId;
-	static BOOL bInit = FALSE;
+	static BOOL bInit = TRUE;
 
 	// Code
 	switch(iMsg)
@@ -728,6 +748,8 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			{
 				case ID_REGISTER_BTN:
 					
+				if (bValidateFirstName && bValidateMiddleName && bValidateLastName)
+				{
 					if (!CreateOpenLogFile(&gpFile_UserLog, "User-Log.log", "w"))
 					{
 						MessageBox(NULL, TEXT("Failed To Create User Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
@@ -748,7 +770,19 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 
 					MessageBox(NULL, TEXT("User Registered Successfully ..."), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
 					EndDialog(hDlg, (INT_PTR)0);
-					
+				}
+				else
+				{
+					if (!bValidateFirstName && !bValidateMiddleName && !bValidateLastName)
+						MessageBox(NULL, TEXT("Please Enter Valid Details !!!"), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
+					else if (!bValidateFirstName)
+						MessageBox(NULL, TEXT("Please Enter Valid First Name !!!"), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
+					else if (!bValidateMiddleName)
+						MessageBox(NULL, TEXT("Please Enter Valid Middle Name !!!"), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
+					else if (!bValidateLastName)
+						MessageBox(NULL, TEXT("Please Enter Valid Last Name !!!"), TEXT("User Registration"), MB_ICONINFORMATION | MB_OK);
+				}
+
 				break;
 			}
 
@@ -775,7 +809,10 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 					}
 
 					if (bValidateFirstName && bValidateMiddleName && bValidateLastName)
+					{
+						bInit = FALSE;
 						EnableWindow(GetDlgItem(hDlg, ID_REGISTER_BTN), TRUE);
+					}
 					else
 						EnableWindow(GetDlgItem(hDlg, ID_REGISTER_BTN), FALSE);
 						
@@ -795,29 +832,25 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			SetBkMode(hdc, TRANSPARENT);
 
 			controlId = GetDlgCtrlID((HWND)lParam);
-
-			if (controlId == ID_FNAME_LBL)
-				SetTextColor(hdc, bValidateFirstName ? BLACK_COLOR : RED_COLOR);
-			else if (controlId == ID_MNAME_LBL)
-				SetTextColor(hdc, bValidateMiddleName ? BLACK_COLOR : RED_COLOR);
-			else if (controlId == ID_LNAME_LBL)
-				SetTextColor(hdc, bValidateLastName ? BLACK_COLOR : RED_COLOR);
-
-			// if (GetDlgCtrlID((HWND)lParam) == ID_MNAME_LBL)
-			// {
-			// 	if (!bValidateMiddleName)
-			// 		SetTextColor(hdc, RED_COLOR);
-			// 	else
-			// 		SetTextColor(hdc, BLACK_COLOR);
-			// }
-
-			// if (GetDlgCtrlID((HWND)lParam) == ID_LNAME_LBL)
-			// {
-			// 	if (!bValidateLastName)
-			// 		SetTextColor(hdc, RED_COLOR);
-			// 	else
-			// 		SetTextColor(hdc, BLACK_COLOR);
-			// }
+			
+			if (!bInit)
+			{
+				if (controlId == ID_FNAME_LBL)
+					SetTextColor(hdc, bValidateFirstName ? BLACK_COLOR : RED_COLOR);
+				else if (controlId == ID_MNAME_LBL)
+					SetTextColor(hdc, bValidateMiddleName ? BLACK_COLOR : RED_COLOR);
+				else if (controlId == ID_LNAME_LBL)
+					SetTextColor(hdc, bValidateLastName ? BLACK_COLOR : RED_COLOR);
+			}
+			else
+			{
+				if (controlId == ID_FNAME_LBL)
+					SetTextColor(hdc, BLACK_COLOR);
+				else if (controlId == ID_MNAME_LBL)
+					SetTextColor(hdc, BLACK_COLOR);
+				else if (controlId == ID_LNAME_LBL)
+					SetTextColor(hdc, BLACK_COLOR);
+			}
 
 		return (INT_PTR)CreateSolidBrush(BLUE_BG);
 

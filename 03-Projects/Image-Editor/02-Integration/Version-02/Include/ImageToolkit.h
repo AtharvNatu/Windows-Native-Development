@@ -10,7 +10,7 @@
 #define DEBUG                               0
 
 //! Icon
-#define ADN_ICON                            101
+#define IE_APP_ICON                         101
 #define ADN_PICKER_CURSOR                   102
 
 //! Menu
