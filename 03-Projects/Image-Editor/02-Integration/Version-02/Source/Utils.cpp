@@ -318,6 +318,37 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 
 	return ofn;
 }
+
+void CopyToClipboard(HWND hwnd, RGB rgb)
+{
+    // char buffer[40];
+    // snprintf(buffer, sizeof(buffer), "R : %d, G : %d, B : %d", rgb.R, rgb.G, rgb.B);
+    // const size_t len = strlen(buffer) + 1;
+    // HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
+    // memcpy(GlobalLock(hMem), buffer, len);
+    // GlobalUnlock(hMem);
+    // OpenClipboard(0);
+    // EmptyClipboard();
+    // SetClipboardData(CF_TEXT, hMem);
+    // CloseClipboard();
+
+    // Variable Declarations
+    char buffer[40];
+
+    // Code
+    snprintf(buffer, sizeof(buffer), "R : %d, G : %d, B : %d", rgb.R, rgb.G, rgb.B);
+    const size_t bufferLength = strlen(buffer) + 1;
+
+    HGLOBAL hGlobalMemory = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, bufferLength);
+    memcpy(GlobalLock(hGlobalMemory), buffer, bufferLength);
+    GlobalUnlock(hGlobalMemory);
+    OpenClipboard(hwnd);
+    EmptyClipboard();
+    SetClipboardData(CF_TEXT, hGlobalMemory);
+    GlobalFree(hGlobalMemory);
+    CloseClipboard();
+}
+
 //*--------------------------------------------------------------------------------------------
 
 //! User Data Related

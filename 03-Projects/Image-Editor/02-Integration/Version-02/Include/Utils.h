@@ -13,6 +13,21 @@ typedef struct tagTimeStruct
     const char *amPm;
 } FormattedTime;
 
+typedef struct tagUser
+{
+	char firstName[TEXT_LENGTH];
+	char middleName[TEXT_LENGTH];
+	char lastName[TEXT_LENGTH];
+} USER;
+
+typedef struct tagRGB
+{
+	unsigned int R;
+	unsigned int G;
+	unsigned int B;
+} RGB;
+
+
 //* COM Related
 //*--------------------------------------------------------------------------------------------
 BOOL RegisterServerLibararies(void);
@@ -36,6 +51,7 @@ void PrintLog(FILE**, const char *, ...);
 void CloseLogFile(FILE**);
 FormattedTime GetFormattedTime(void);
 OPENFILENAME OpenFileDialog(HWND);
+void CopyToClipboard(HWND, RGB);
 //*--------------------------------------------------------------------------------------------
 
 //* User Data Related

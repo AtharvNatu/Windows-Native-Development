@@ -31,20 +31,6 @@ FormattedTime formattedTime;
 
 unsigned int giPixelX = 0, giPixelY = 0;
 
-typedef struct tagUser
-{
-	char firstName[TEXT_LENGTH];
-	char middleName[TEXT_LENGTH];
-	char lastName[TEXT_LENGTH];
-} USER;
-
-typedef struct tagRGB
-{
-	unsigned int R;
-	unsigned int G;
-	unsigned int B;
-} RGB;
-
 USER user;
 RGB rgb;
 
@@ -573,17 +559,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 
 				if (bCopyToClipboard)
 				{
-					//! Copy to Clipboard
-					char buffer[40];
-					snprintf(buffer, sizeof(buffer), "R : %d, G : %d, B : %d", rgb.R, rgb.G, rgb.B);
-					const size_t len = strlen(buffer) + 1;
-					HGLOBAL hMem =  GlobalAlloc(GMEM_MOVEABLE, len);
-					memcpy(GlobalLock(hMem), buffer, len);
-					GlobalUnlock(hMem);
-					OpenClipboard(0);
-					EmptyClipboard();
-					SetClipboardData(CF_TEXT, hMem);
-					CloseClipboard();
+					CopyToClipboard(hDlg, rgb);
 				}
 			}
 			if (hdcPaint)
