@@ -140,7 +140,7 @@ void AddWindowControls(HWND hwndParent)
 {
 	// Code
 	applyEffectButton  = CreateWindow(
-		"Button",
+		TEXT("Button"),
 		TEXT("Apply Effect"),
 		WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
 		480,
@@ -154,7 +154,7 @@ void AddWindowControls(HWND hwndParent)
 	);
 
 	resetImageButton  = CreateWindow(
-		"Button",
+		TEXT("Button"),
 		TEXT("Reset Image"),
 		WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
 		1700,
@@ -169,7 +169,7 @@ void AddWindowControls(HWND hwndParent)
 
 	destaurationRadioButton  = CreateWindowEx(
 		0,
-		"Button",
+		TEXT("Button"),
 		TEXT("Desaturation"),
 		WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON,
 		1700,
@@ -184,7 +184,7 @@ void AddWindowControls(HWND hwndParent)
 
 	sepiaRadioButton  = CreateWindowEx(
 		0,
-		"Button",
+		TEXT("Button"),
 		TEXT("Sepia"),
 		WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON,
 		1700,
@@ -199,7 +199,7 @@ void AddWindowControls(HWND hwndParent)
 
 	negativeRadioButton  = CreateWindowEx(
 		0,
-		"Button",
+		TEXT("Button"),
 		TEXT("Color Inversion"),
 		WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON,
 		1700,
@@ -274,7 +274,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		case WM_CREATE:
 			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
 
-			hPickerCursor = (HCURSOR)LoadImage(NULL, "Assets/Images/ColorPicker.cur", IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+			hPickerCursor = (HCURSOR)LoadImage(NULL, TEXT("Assets/Images/ColorPicker.cur"), IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
 			if (hPickerCursor == NULL)
 			{
 				MessageBox(NULL, TEXT("Failed To Load Picker Cursor .. Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
@@ -553,15 +553,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_SETFOCUS:
 
-			lFileName = fileName;
-			checkFileStatus = PathFileExists(lFileName);
-			if (checkFileStatus == 1)
-				bUserRegistered = TRUE;
-			else
-				bUserRegistered = FALSE;
+			// lFileName = fileName;
+			// checkFileStatus = PathFileExists(lFileName);
+			// if (checkFileStatus == 1)
+			// 	bUserRegistered = TRUE;
+			// else
+			// 	bUserRegistered = FALSE;
 
-			if (!bUserRegistered)
-				DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hwnd, RegisterDialogProc);
+			// if (!bUserRegistered)
+			// 	DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hwnd, RegisterDialogProc);
 				
 		break;
 
