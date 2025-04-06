@@ -15,10 +15,6 @@ IDesaturation *pIDesaturation = NULL;
 ISepia *pISepia = NULL;
 IColorInversion *pIColorInversion = NULL;
 
-BOOL bDesaturate = FALSE;
-BOOL bSepia = FALSE;
-BOOL bInversion = FALSE;
-BOOL bResetImage = FALSE;
 BOOL bColorPick = FALSE;
 BOOL bUserRegistered = FALSE;
 BOOL bValidateFirstName = FALSE;
@@ -38,6 +34,30 @@ float contrast = 50.0f;
 
 USER user;
 RGB rgb;
+
+void applySepia(RGBColor input, RGBColor *output)
+{
+	float tr = 0.393f * input.r + 0.769f * input.g + 0.189f * input.b;
+	float tg = 0.349f * input.r + 0.686f * input.g + 0.168f * input.b;
+	float tb = 0.272f * input.r + 0.534f * input.g + 0.131f * input.b;
+
+	output->r = (BYTE)std::min(255.0f, tr);
+	output->g = (BYTE)std::min(255.0f, tg);
+	output->b = (BYTE)std::min(255.0f, tb);
+}
+
+void applyContrast(RGBColor input, RGBColor* output, float contrast)
+{
+    // Clamp contrast to a reasonable range (e.g., -255 to 255)
+    contrast = std::max(-255.0f, std::min(255.0f, contrast));
+
+    // Normalize contrast value
+    float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
+
+    output->r = (BYTE)std::clamp(factor * (input.r - 128.0f) + 128.0f, 0.0f, 255.0f);
+    output->g = (BYTE)std::clamp(factor * (input.g - 128.0f) + 128.0f, 0.0f, 255.0f);
+    output->b = (BYTE)std::clamp(factor * (input.b - 128.0f) + 128.0f, 0.0f, 255.0f);
+}
 
 
 //* Entry-point Function
@@ -113,30 +133,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 	return (int)msg.wParam;
 
-}
-
-void applySepia(RGBColor input, RGBColor *output)
-{
-	float tr = 0.393f * input.r + 0.769f * input.g + 0.189f * input.b;
-	float tg = 0.349f * input.r + 0.686f * input.g + 0.168f * input.b;
-	float tb = 0.272f * input.r + 0.534f * input.g + 0.131f * input.b;
-
-	output->r = (BYTE)std::min(255.0f, tr);
-	output->g = (BYTE)std::min(255.0f, tg);
-	output->b = (BYTE)std::min(255.0f, tb);
-}
-
-void applyContrast(RGBColor input, RGBColor* output, float contrast)
-{
-    // Clamp contrast to a reasonable range (e.g., -255 to 255)
-    contrast = std::max(-255.0f, std::min(255.0f, contrast));
-
-    // Normalize contrast value
-    float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
-
-    output->r = (BYTE)std::clamp(factor * (input.r - 128.0f) + 128.0f, 0.0f, 255.0f);
-    output->g = (BYTE)std::clamp(factor * (input.g - 128.0f) + 128.0f, 0.0f, 255.0f);
-    output->b = (BYTE)std::clamp(factor * (input.b - 128.0f) + 128.0f, 0.0f, 255.0f);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
@@ -380,14 +376,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					{
 						wsprintf(szImagePath, ofn.lpstrFile);
 
-						if (bImageLoaded)
-						{
-							bResetImage = TRUE;
-							bDesaturate = FALSE;
-							bSepia = FALSE;
-							bInversion = FALSE;
-						}
-						
 						if (LoadOCVImage(std::string(szImagePath), &ocvImage) == false)
 							MessageBox(NULL, TEXT("Failed To Load Image ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
 						else
