@@ -5,8 +5,11 @@ HWND hwndControlsDialog = NULL;
 HINSTANCE ghInstance = NULL;
 HRESULT hr = S_OK;
 HMENU hMenu = NULL;
-HBITMAP hBitmap = NULL, hOriginalBitmap = NULL;
+HBITMAP hBitmap = NULL;
 HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
+
+cv::Mat ocvImage, renderImage;
+COLORREF desaturatedPixelColor, sepiaPixelColor, negativePixelColor;
 
 IDesaturation *pIDesaturation = NULL;
 ISepia *pISepia = NULL;
@@ -21,6 +24,7 @@ BOOL bUserRegistered = FALSE;
 BOOL bValidateFirstName = FALSE;
 BOOL bValidateMiddleName = FALSE;
 BOOL bValidateLastName = FALSE;
+BOOL bImageLoaded = FALSE;
 
 FILE* gpFile_UserLog = NULL;
 FILE* gpFile_ColorPickerLog = NULL;
@@ -30,10 +34,11 @@ FILE* gpFile_AppLog = NULL;
 FormattedTime formattedTime;
 
 unsigned int giPixelX = 0, giPixelY = 0;
+float contrast = 50.0f;
 
 USER user;
 RGB rgb;
-cv::Mat ocvImage;
+
 
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -110,6 +115,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 }
 
+void applySepia(RGBColor input, RGBColor *output)
+{
+	float tr = 0.393f * input.r + 0.769f * input.g + 0.189f * input.b;
+	float tg = 0.349f * input.r + 0.686f * input.g + 0.168f * input.b;
+	float tb = 0.272f * input.r + 0.534f * input.g + 0.131f * input.b;
+
+	output->r = (BYTE)std::min(255.0f, tr);
+	output->g = (BYTE)std::min(255.0f, tg);
+	output->b = (BYTE)std::min(255.0f, tb);
+}
+
+void applyContrast(RGBColor input, RGBColor* output, float contrast)
+{
+    // Clamp contrast to a reasonable range (e.g., -255 to 255)
+    contrast = std::max(-255.0f, std::min(255.0f, contrast));
+
+    // Normalize contrast value
+    float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
+
+    output->r = (BYTE)std::clamp(factor * (input.r - 128.0f) + 128.0f, 0.0f, 255.0f);
+    output->g = (BYTE)std::clamp(factor * (input.g - 128.0f) + 128.0f, 0.0f, 255.0f);
+    output->b = (BYTE)std::clamp(factor * (input.b - 128.0f) + 128.0f, 0.0f, 255.0f);
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	//* Variable Declarations
@@ -118,9 +147,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 	HDC hdc = NULL;
 
-	COLORREF desaturatedPixelColor, sepiaPixelColor, negativePixelColor;
+	void *lpBits = nullptr;
 
-	static BOOL bImageLoaded = FALSE;
 	static TCHAR szImagePath[_MAX_PATH];
 	static unsigned int resizedWindowWidth = 0, resizedWindowHeight = 0;
 	int errorStatus = 0;
@@ -224,14 +252,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			resizedWindowWidth = LOWORD(lParam);
 			resizedWindowHeight = HIWORD(lParam);
 		break;
-
+		
 		case WM_PAINT:
-			
 			HDC hdcMem;
 			BITMAP bitmap;
 			HFONT hFont;
 			
-
 			GetClientRect(hwnd, &rc);
 			hdc = BeginPaint(hwnd, &ps);
 			{
@@ -251,14 +277,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					BITMAPINFO bitmapInfo;
 					ZeroMemory(&bitmapInfo, sizeof(BITMAPINFO));
 					bitmapInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-					bitmapInfo.bmiHeader.biWidth = ocvImage.cols;
-					bitmapInfo.bmiHeader.biHeight = -ocvImage.rows;
+					bitmapInfo.bmiHeader.biWidth = renderImage.cols;
+					bitmapInfo.bmiHeader.biHeight = -renderImage.rows;
 					bitmapInfo.bmiHeader.biPlanes = 1;
 					bitmapInfo.bmiHeader.biBitCount = 24;
 					bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
 					hdcMem = CreateCompatibleDC(hdc);
-					void *lpBits = nullptr;
+					
 
 					hBitmap = CreateDIBSection(
 						hdcMem,
@@ -274,11 +300,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						hdcMem,
 						hBitmap,
 						0,
-						ocvImage.rows,
-						ocvImage.data,
+						renderImage.rows,
+						renderImage.data,
 						&bitmapInfo,
 						DIB_RGB_COLORS
-					);
+					);			
 					
 					SetStretchBltMode(hdc, COLORONCOLOR);
 					StretchBlt(
@@ -290,52 +316,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						hdcMem,
 						0,
 						0,
-						ocvImage.cols,
-						ocvImage.rows,
+						renderImage.cols,
+						renderImage.rows,
 						SRCCOPY
-					);
-					
-					// if (bDesaturate)
-					// {
-					// 	for (int yRow = 0; yRow < resizedWindowHeight; yRow++)
-					// 	{
-					// 		for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
-					// 		{
-					// 			// Get color from the pixel at co-ordinate (X-Column,Y-Row)
-					// 			COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-					// 			pIDesaturation->Desaturation(originalPixelColor, &desaturatedPixelColor);
-					// 			SetPixel(hdc, xColumn, yRow, desaturatedPixelColor);
-					// 		}
-					// 	}
-					// }
-
-					// if (bSepia)
-					// {
-					// 	for (int yRow = 0; yRow < resizedWindowHeight; yRow++)
-					// 	{
-					// 		for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
-					// 		{
-					// 			// Get color from the pixel at co-ordinate (X-Column,Y-Row)
-					// 			COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-					// 			pISepia->Sepia(originalPixelColor, &sepiaPixelColor);
-					// 			SetPixel(hdc, xColumn, yRow, sepiaPixelColor);
-					// 		}
-					// 	}
-					// }
-
-					// if (bInversion)
-					// {
-					// 	for (int yRow = 0; yRow < resizedWindowHeight; yRow++)
-					// 	{
-					// 		for (int xColumn = 0; xColumn < resizedWindowWidth; xColumn++)
-					// 		{
-					// 			// Get color from the pixel at co-ordinate (X-Column,Y-Row)
-					// 			COLORREF originalPixelColor = GetPixel(hdc, xColumn, yRow);
-					// 			pIColorInversion->ColorInversion(originalPixelColor, &negativePixelColor);
-					// 			SetPixel(hdc, xColumn, yRow, negativePixelColor);
-					// 		}
-					// 	}
-					// }
+					);				
 
 					if (hdcMem)
 					{
@@ -396,20 +380,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					{
 						wsprintf(szImagePath, ofn.lpstrFile);
 
-						// if (bImageLoaded)
-						// {
-						// 	DeleteImageObject(&hOriginalBitmap);
-						// 	DeleteImageObject(&hBitmap);
-						// }
-
-						// if (!LoadImageFromExplorer(&hBitmap, &hOriginalBitmap, szImagePath))
-						// {
-						// 	bImageLoaded = FALSE;
-						// 	MessageBox(NULL, TEXT("Failed To Load Bitmap ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
-						// 	DestroyWindow(hwnd);
-						// 	hwnd = NULL;
-						// }
-
+						if (bImageLoaded)
+						{
+							bResetImage = TRUE;
+							bDesaturate = FALSE;
+							bSepia = FALSE;
+							bInversion = FALSE;
+						}
 						
 						if (LoadOCVImage(std::string(szImagePath), &ocvImage) == false)
 							MessageBox(NULL, TEXT("Failed To Load Image ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
@@ -418,14 +395,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							if (ConvertOCVImageToBGR(&ocvImage) == false)
 								MessageBox(NULL, TEXT("Failed To Convert Image ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
 							else
+							{
+								renderImage = ocvImage.clone();
 								bImageLoaded = TRUE;
-						}
-						
-
-						EnableMenuItem(hMenu, IDM_EDIT, MF_BYCOMMAND | MF_ENABLED);
-						DrawMenuBar(hwnd);
-
-						InvalidateRect(hwnd, NULL, TRUE);
+								EnableMenuItem(hMenu, IDM_EDIT, MF_BYCOMMAND | MF_ENABLED);
+								DrawMenuBar(hwnd);
+								InvalidateRect(hwnd, NULL, TRUE);
+							}							
+						}					
 					}
 
 				break;
@@ -467,11 +444,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			DeleteAppCursor(&hPickerCursor);
-			DeleteImageObject(&hOriginalBitmap);
 			DeleteImageObject(&hBitmap);
 
 			CloseLogFile(&gpFile_UserLog);
 			CloseLogFile(&gpFile_AppLog);
+
+			renderImage.release();
+			ocvImage.release();
 
 			PostQuitMessage(0);
 
@@ -609,32 +588,80 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 			switch(LOWORD(wParam))
 			{
 				case ID_APPLY:
-					if (IsDlgButtonChecked(hDlg, ID_RB_DESAT))
+
+					if (bImageLoaded)
 					{
-						bDesaturate = TRUE;
-						bSepia = FALSE;
-						bInversion = FALSE;
+						renderImage = ocvImage.clone();
+
+						if (IsDlgButtonChecked(hDlg, ID_RB_DESAT))
+						{
+							//! Desaturation
+							for (int yRow = 0; yRow < renderImage.rows; yRow++)
+							{
+								cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
+								for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
+								{
+									COLORREF originalPixelColor = RGB(row[xColumn][2], row[xColumn][1], row[xColumn][0]);
+									pIDesaturation->Desaturation(originalPixelColor, &desaturatedPixelColor);
+									BYTE r = GetRValue(desaturatedPixelColor);
+									BYTE g = GetGValue(desaturatedPixelColor);
+									BYTE b = GetBValue(desaturatedPixelColor);
+									row[xColumn] = cv::Vec3b(b, g, r);
+								}
+							}
+							InvalidateRect(GetParent(hDlg), NULL, TRUE);
+						}
+						else if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
+						{
+							//! Sepia
+							for (int yRow = 0; yRow < renderImage.rows; yRow++)
+							{
+								cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
+								for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
+								{
+									RGBColor input = 
+									{
+										row[xColumn][2],
+										row[xColumn][1],
+										row[xColumn][0],
+									};
+
+									RGBColor output;
+									// applyContrast(input, &output, contrast);
+									applySepia(input, &output);
+
+									row[xColumn] = cv::Vec3b(output.b, output.g, output.r);
+								}
+							}
+							// contrast += 10.0f;
+							InvalidateRect(GetParent(hDlg), NULL, TRUE);
+						}
+						else if (IsDlgButtonChecked(hDlg, ID_RB_INV))
+						{
+							//! Inversion
+							for (int yRow = 0; yRow < renderImage.rows; yRow++)
+							{
+								cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
+								for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
+								{
+									COLORREF originalPixelColor = RGB(row[xColumn][2], row[xColumn][1], row[xColumn][0]);
+									pIColorInversion->ColorInversion(originalPixelColor, &negativePixelColor);
+									BYTE r = GetRValue(negativePixelColor);
+									BYTE g = GetGValue(negativePixelColor);
+									BYTE b = GetBValue(negativePixelColor);
+									row[xColumn] = cv::Vec3b(b, g, r);
+								}
+							}
+							InvalidateRect(GetParent(hDlg), NULL, TRUE);
+						}
 					}
-					else if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
-					{
-						bDesaturate = FALSE;
-						bSepia = TRUE;
-						bInversion = FALSE;
-					}
-					else if (IsDlgButtonChecked(hDlg, ID_RB_INV))
-					{
-						bDesaturate = FALSE;
-						bSepia = FALSE;
-						bInversion = TRUE;
-					}
-					InvalidateRect(GetParent(hDlg), NULL, TRUE);
 				break;
 
 				case ID_RESET:
-					bResetImage = TRUE;
-					bDesaturate = FALSE;
-					bSepia = FALSE;
-					bInversion = FALSE;
+					renderImage = ocvImage.clone();
+					CheckDlgButton(hDlg, ID_RB_DESAT, BST_UNCHECKED);
+					CheckDlgButton(hDlg, ID_RB_SEPIA, BST_UNCHECKED);
+					CheckDlgButton(hDlg, ID_RB_INV, BST_UNCHECKED);
 					InvalidateRect(GetParent(hDlg), NULL, TRUE);
 				break;
 

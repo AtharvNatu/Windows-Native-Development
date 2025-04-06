@@ -453,7 +453,6 @@ bool LoadOCVImage(std::string imagePath, cv::Mat* image)
     *image = cv::imread(cv::String(imagePath), cv::IMREAD_UNCHANGED);
     if (!image->data)
         return false;
-
     return true;
 }
 
@@ -463,7 +462,6 @@ bool SaveOCVImage(std::string imagePath, cv::Mat* image)
     // Code
     if (!cv::imwrite(cv::String(imagePath), *image))
         return false;
-
     return true;
 }
 
@@ -498,20 +496,20 @@ bool ConvertOCVImageToBGR(cv::Mat* image)
 }
 
 
-std::vector<uchar_t> GetRawPixelData(cv::Mat* image)
+std::vector<BYTE> GetRawPixelData(cv::Mat* image)
 {
-    std::vector<uchar_t> imageVector;
+    std::vector<BYTE> imageVector;
 
     if (image->isContinuous())
-        imageVector.assign((uchar_t*)image->datastart, (uchar_t*)image->dataend);
+        imageVector.assign((BYTE*)image->datastart, (BYTE*)image->dataend);
     else
     {
         for (int i = 0; i < image->rows; i++)
         {
             imageVector.insert(
                 imageVector.end(), 
-                image->ptr<uchar_t>(i), 
-                image->ptr<uchar_t>(i) + image->cols
+                image->ptr<BYTE>(i), 
+                image->ptr<BYTE>(i) + image->cols
             );
         }
     }

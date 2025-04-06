@@ -32,8 +32,12 @@ typedef struct tagRGB
 	unsigned int B;
 } RGB;
 
-typedef unsigned char uchar_t;
-
+typedef struct tagRGBColor
+{
+    BYTE r;
+    BYTE g;
+    BYTE b;
+} RGBColor;
 
 //* COM Related
 //*--------------------------------------------------------------------------------------------
@@ -66,7 +70,7 @@ void CopyToClipboard(HWND, RGB);
 bool LoadOCVImage(std::string imagePath, cv::Mat* image);
 bool SaveOCVImage(std::string imagePath, cv::Mat* image);
 bool ConvertOCVImageToBGR(cv::Mat* image);
-std::vector<uchar_t> GetRawPixelData(cv::Mat* image, int *error);
+std::vector<BYTE> GetRawPixelData(cv::Mat* image, int *error);
 //*--------------------------------------------------------------------------------------------
 
 //* User Data Related
