@@ -69,6 +69,7 @@ void CopyToClipboard(HWND, RGB);
 //*--------------------------------------------------------------------------------------------
 bool LoadOCVImage(std::string imagePath, cv::Mat* image);
 bool SaveOCVImage(std::string imagePath, cv::Mat* image);
+bool UseGPU(std::string imagePath, cv::Mat* image);
 bool ConvertOCVImageToBGR(cv::Mat* image);
 std::vector<BYTE> GetRawPixelData(cv::Mat* image, int *error);
 //*--------------------------------------------------------------------------------------------

@@ -465,6 +465,20 @@ bool SaveOCVImage(std::string imagePath, cv::Mat* image)
     return true;
 }
 
+bool UseGPU(std::string imagePath, cv::Mat* image)
+{
+    // Code
+    constexpr size_t imageSizeThreshold = 10000000; // 10 MB
+    constexpr size_t imageWidthThreshold = 3840;
+
+    std::uintmax_t imageSize = std::filesystem::file_size(imagePath);
+    int imageWidth = image->size().width;
+    if (imageSize > imageSizeThreshold || imageWidth >= imageWidthThreshold)
+        return true;
+    
+    return false;
+}
+
 bool ConvertOCVImageToBGR(cv::Mat* image)
 {
     // Code

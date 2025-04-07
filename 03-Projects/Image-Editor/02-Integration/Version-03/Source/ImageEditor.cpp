@@ -30,10 +30,12 @@ FILE* gpFile_AppLog = NULL;
 FormattedTime formattedTime;
 
 unsigned int giPixelX = 0, giPixelY = 0;
-float contrast = 50.0f;
 
 USER user;
 RGB rgb;
+
+//! Image Effects
+float contrast = 50.0f;
 
 void applySepia(RGBColor input, RGBColor *output)
 {
@@ -384,6 +386,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 								MessageBox(NULL, TEXT("Failed To Convert Image ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
 							else
 							{
+								if (UseGPU(std::string(szImagePath), &ocvImage))
+									MessageBox(NULL, TEXT("Selected GPU For Processing"), TEXT("Device Selection"), MB_OK);
+								else
+									MessageBox(NULL, TEXT("Selected CPU For Processing"), TEXT("Device Selection"), MB_OK);
+								
 								renderImage = ocvImage.clone();
 								bImageLoaded = TRUE;
 								EnableMenuItem(hMenu, IDM_EDIT, MF_BYCOMMAND | MF_ENABLED);
