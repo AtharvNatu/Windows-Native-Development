@@ -1,4 +1,5 @@
 #include "../Include/Utils.h"
+#include "../Include/ImageEffects.cuh"
 
 //* Global Variables
 HWND hwndControlsDialog = NULL;
@@ -609,26 +610,33 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						else if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
 						{
 							//! Sepia
-							for (int yRow = 0; yRow < renderImage.rows; yRow++)
-							{
-								cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
-								for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
-								{
-									RGBColor input = 
-									{
-										row[xColumn][2],
-										row[xColumn][1],
-										row[xColumn][0],
-									};
+							// for (int yRow = 0; yRow < renderImage.rows; yRow++)
+							// {
+							// 	cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
+							// 	for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
+							// 	{
+							// 		RGBColor input = 
+							// 		{
+							// 			row[xColumn][2],
+							// 			row[xColumn][1],
+							// 			row[xColumn][0],
+							// 		};
 
-									RGBColor output;
-									// applyContrast(input, &output, contrast);
-									applySepia(input, &output);
-
-									row[xColumn] = cv::Vec3b(output.b, output.g, output.r);
-								}
-							}
+							// 		RGBColor output;
+							// 		// applyContrast(input, &output, contrast);
+							// 		applySepia(input, &output);
+									
+							// 		row[xColumn] = cv::Vec3b(output.b, output.g, output.r);
+							// 	}
+							// }
 							// contrast += 10.0f;
+							
+							// cv::Mat grayScaleImage;
+							// cv::cvtColor(renderImage, grayScaleImage, cv::COLOR_BGR2GRAY);
+							// SobelOperator sobelEffect;
+							// sobelEffect.applySobelEdgeDetection(&grayScaleImage, &renderImage);
+							// cv::cvtColor(renderImage, renderImage, cv::COLOR_GRAY2BGR);
+
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
 						else if (IsDlgButtonChecked(hDlg, ID_RB_INV))

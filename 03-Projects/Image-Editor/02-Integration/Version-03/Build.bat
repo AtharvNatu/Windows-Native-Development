@@ -14,9 +14,9 @@ echo ---------------------------------------------------------------------------
     nvcc.exe -c -w -Wno-deprecated-gpu-targets --std=c++20 ^
     -I "C:\opencv\build\include" ^
     -I "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\include" ^
-    "..\Source\Utils.cpp" ^
-    "..\Source\ImageEffects.cu" ^
-    "..\Source\ImageEditor.cpp"
+    "..\Source\CPP\Utils.cpp" ^
+    "..\Source\CPP\ImageEditor.cu" ^
+    "..\Source\CPP\ImageEffects.cu"
 
 @echo:
 echo ----------------------------------------------------------------------------------------------------------------
