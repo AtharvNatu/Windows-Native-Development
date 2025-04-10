@@ -1,4 +1,4 @@
-#include "../Include/ImageEffects.cuh"
+#include "ImageEffects.cuh"
 
 //! Cuda Utils Function Definitions
 bool CudaUtils::memAlloc(void **devPtr, size_t size)

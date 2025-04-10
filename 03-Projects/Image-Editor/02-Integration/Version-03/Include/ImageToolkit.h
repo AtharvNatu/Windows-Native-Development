@@ -19,6 +19,7 @@
 #define IDM_EXIT                            203
 #define IDM_EDIT                            204
 #define IDM_ABOUT                           205
+#define IDM_GENERATE                        206
 
 //! Dialogs
 #define IE_DLG                              301
@@ -46,12 +47,16 @@
 
 #define REGISTER_USER_DLG                   501
 #define ID_REGISTER_BTN                     502
-#define ID_FNAME_TXT                            503
-#define ID_MNAME_TXT                            504
-#define ID_LNAME_TXT                            505
+#define ID_FNAME_TXT                        503
+#define ID_MNAME_TXT                        504
+#define ID_LNAME_TXT                        505
 #define ID_FNAME_LBL                        506
 #define ID_MNAME_LBL                        507
 #define ID_LNAME_LBL                        508
+
+#define GENERATE_IMG_DLG                    601
+#define ID_PROMPT_TXT                       602
+#define ID_GEN_BTN                          603
 
 #define WINDOW_WIDTH 	                    800
 #define WINDOW_HEIGHT	                    600
@@ -69,3 +74,4 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK RegisterDialogProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK GenerateImageDialogProc(HWND, UINT, WPARAM, LPARAM);

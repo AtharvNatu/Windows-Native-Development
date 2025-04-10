@@ -1,5 +1,5 @@
-#include "../Include/Utils.h"
-#include "../Include/ImageEffects.cuh"
+#include "Utils.h"
+#include "ImageEffects.cuh"
 
 //* Global Variables
 HWND hwndControlsDialog = NULL;
@@ -78,7 +78,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	hr = CoInitialize(NULL);
 	if (FAILED(hr))
 	{
-		MessageBox(NULL, TEXT("Failed To Initialize COM Library ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+		MessageBox(NULL, TEXT("Failed To Initialize COM Library ... Exiting Now !!!"), TEXT("PhotoMind"), MB_ICONERROR | MB_OK);
 		exit(EXIT_FAILURE);
 	}
 
@@ -104,7 +104,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	//* Create Window in Memory
 	hwnd = CreateWindow(
 		szAppName,
-		TEXT("Image Editor v1.0"),
+		TEXT("PhotoMind v1.0"),
 		WS_OVERLAPPEDWINDOW,
 		0,
 		0,
@@ -181,14 +181,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			//! Register Server Libraries
 			if (!RegisterServerLibararies())
 			{
-				MessageBox(NULL, TEXT("Failed To Install Required Library Files ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+				MessageBox(NULL, TEXT("Failed To Install Required Library Files ... Exiting Now !!!"), TEXT("PhotoMind"), MB_ICONERROR | MB_OK);
 				exit(EXIT_FAILURE);
 			}
 
 			//! App Log File
-			if (!CreateOpenLogFile(&gpFile_AppLog, "ImageEditor.log", "a+"))
+			if (!CreateOpenLogFile(&gpFile_AppLog, "PhotoMind.log", "a+"))
 			{
-				MessageBox(NULL, TEXT("Failed To Create App Log File ... Exiting Now !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+				MessageBox(NULL, TEXT("Failed To Create App Log File ... Exiting Now !!!"), TEXT("PhotoMind"), MB_ICONERROR | MB_OK);
 				exit(EXIT_FAILURE);
 			}
 
@@ -196,7 +196,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			// hr = GetLibraryInterfaces(pIDesaturation, pISepia, pIColorInversion, &errorStatus);
 			// if (errorStatus < 0)
 			// {
-			// 	MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("Image Editor"), MB_ICONERROR | MB_OK);
+			// 	MessageBox(hwnd, TEXT("ImageEditor.dll and ImageToolkit.dll Not Found ... Exiting !!!"), TEXT("PhotoMind"), MB_ICONERROR | MB_OK);
 			// 	if (DEBUG == 1)
 			// 		GetErrorMessage(hr, FALSE, NULL);
 			// 	formattedTime = GetFormattedTime();
@@ -410,6 +410,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 				case IDM_EDIT:
 					hwndControlsDialog = CreateDialog(ghInstance, MAKEINTRESOURCE(IE_DLG), hwnd, ControlsDialogProc);
+				break;
+
+				case IDM_GENERATE:
+					DialogBox(ghInstance, MAKEINTRESOURCE(GENERATE_IMG_DLG), hwnd, GenerateImageDialogProc);		
 				break;
 
 				case IDM_ABOUT:
@@ -674,7 +678,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						bExportColorPickerLog = TRUE;
 						if (!CreateOpenLogFile(&gpFile_ColorPickerLog, "Color-Picker-Log.log", "a+"))
 						{
-							MessageBox(NULL, TEXT("Failed To Create Color Picker Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
+							MessageBox(NULL, TEXT("Failed To Create Color Picker Log File ... Exiting Now !!!"), TEXT("PhotoMind Error"), MB_ICONERROR | MB_OK);
 							exit(EXIT_FAILURE);
 						}	
 					}
@@ -686,7 +690,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						bExportNormalizedColorPickerLog = TRUE;
 						if (!CreateOpenLogFile(&gpFile_NormalizedColorPickerLog, "Normalized-Color-Picker-Log.log", "a+"))
 						{
-							MessageBox(NULL, TEXT("Failed To Create Normalized Color Picker Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
+							MessageBox(NULL, TEXT("Failed To Create Normalized Color Picker Log File ... Exiting Now !!!"), TEXT("PhotoMind Error"), MB_ICONERROR | MB_OK);
 							exit(EXIT_FAILURE);
 						}
 					}
@@ -794,13 +798,13 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 				{
 					if (!CreateOpenLogFile(&gpFile_UserLog, "User-Log.log", "w"))
 					{
-						MessageBox(NULL, TEXT("Failed To Create User Log File ... Exiting Now !!!"), TEXT("Image Editor Error"), MB_ICONERROR | MB_OK);
+						MessageBox(NULL, TEXT("Failed To Create User Log File ... Exiting Now !!!"), TEXT("PhotoMind Error"), MB_ICONERROR | MB_OK);
 						exit(EXIT_FAILURE);
 					}
 
 					formattedTime = GetFormattedTime();
 
-					PrintLog(&gpFile_UserLog, "Image Editor v1.0 User Registration Log\n");
+					PrintLog(&gpFile_UserLog, "PhotoMind v1.0 User Registration Log\n");
 					PrintLog(&gpFile_UserLog, "---------------------------------------------------------------\n");
 					PrintLog(&gpFile_UserLog, "First Name : %s\n", user.firstName);
 					PrintLog(&gpFile_UserLog, "Middle Name : %s\n", user.middleName);
@@ -909,6 +913,48 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	return (INT_PTR)FALSE;
 }
 
+
+INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
+{
+	//*Variable Declarations
+	HDC hdc = NULL;
+	static HBRUSH hBrush = NULL;
+	int controlId;
+	static BOOL bInit = TRUE;
+
+	// Code
+	switch(iMsg)
+	{
+		case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+
+		case WM_COMMAND:
+			switch(LOWORD(wParam))
+			{
+				case ID_GEN_BTN:
+					
+				break;
+			}
+		return (INT_PTR)TRUE;
+
+		case WM_CTLCOLORDLG:
+		case WM_CTLCOLORSTATIC:
+			hdc = (HDC)wParam;
+			SetBkMode(hdc, TRANSPARENT);
+		return (INT_PTR)CreateSolidBrush(BLUE_BG);
+
+		case WM_CLOSE:
+			if (hdc)
+				hdc = NULL;
+			EndDialog(hDlg, (INT_PTR)0);
+		break;
+
+		default:
+			return (INT_PTR)FALSE;
+	}
+
+	return (INT_PTR)FALSE;
+}
 
 
 

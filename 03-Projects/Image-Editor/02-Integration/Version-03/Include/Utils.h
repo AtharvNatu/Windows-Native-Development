@@ -43,6 +43,7 @@ typedef struct tagRGBColor
 //*--------------------------------------------------------------------------------------------
 BOOL RegisterServerLibararies(void);
 HRESULT GetLibraryInterfaces(IDesaturation*, ISepia*, IColorInversion*, int*);
+BSTR GenerateImageUsingSD(const wchar_t*, const wchar_t*);
 void SafeInterfaceRelease(IDesaturation*, ISepia*, IColorInversion*);
 //*--------------------------------------------------------------------------------------------
 

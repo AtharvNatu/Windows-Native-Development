@@ -16,6 +16,11 @@ BEGIN
         MENUITEM "&Edit Image",                                   IDM_EDIT
     END
 
+    POPUP "&AI"
+    BEGIN
+        MENUITEM "&Generate Image",                               IDM_GENERATE
+    END
+
     POPUP "&Help"
     BEGIN
         MENUITEM "&About",                                        IDM_ABOUT
@@ -55,11 +60,11 @@ END
 
 ABOUT_DLG DIALOGEX 0, 0, 180, 100
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | DS_CENTER
-CAPTION "About Image Editor"
+CAPTION "About PhotoMind"
 FONT 12, "Poppins"
 BEGIN
     ICON IE_APP_ICON,                                                                          -1, 10, 10, 50, 50
-    CTEXT "Image Editor",                                                                   -1, 35, 10, 100, 20
+    CTEXT "PhotoMind",                                                                      -1, 35, 10, 100, 20
     CTEXT "By",                                                                             -1, 35, 18, 100, 20
     CTEXT "AstroMediComp",                                                                  -1, 35, 26, 100, 20
     LTEXT "Software Version : v1.0",                                                        -1, 45, 42, 100, 20
@@ -82,5 +87,14 @@ BEGIN
     CTEXT "Last Name",                                      ID_LNAME_LBL,                       210, 40, 80, 20, SS_NOTIFY
     DEFPUSHBUTTON "Register",                               ID_REGISTER_BTN,                    250, 60, 40, 12
 END
+
+GENERATE_IMG_DLG DIALOGEX 0, 0, 300, 90
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | DS_CENTER
+CAPTION "AI Image Generation"
+FONT 11, "Poppins"
+BEGIN
+    LTEXT           "Enter Prompt to Generate Image",    -1,             20, 10, 260, 20, SS_CENTER | SS_WORDELLIPSIS
+    EDITTEXT                                           ID_PROMPT_TXT,    20, 25, 260, 35, ES_MULTILINE | WS_VSCROLL | ES_AUTOVSCROLL | ES_WANTRETURN
+    DEFPUSHBUTTON   "Generate Image",                  ID_GEN_BTN,       110, 70, 80, 14
 END
 

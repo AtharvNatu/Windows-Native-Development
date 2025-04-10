@@ -1,4 +1,4 @@
-#include "../Include/Utils.h"
+#include "Utils.h"
 
 //! COM Related
 //*--------------------------------------------------------------------------------------------
@@ -118,6 +118,107 @@ HRESULT GetLibraryInterfaces(IDesaturation *pIDesaturation, ISepia *pISepia, ICo
 
     return hr;
 }
+
+BSTR GenerateImageUsingSD(const wchar_t* promptText, const wchar_t* outputPath)
+{
+    // Variable Declarations
+    CLSID clsid_SdServer;
+    IDispatch* pIDispatch = NULL;
+    DISPID dispId_GenerateImage;
+    OLECHAR* szFunctionName = L"GenerateImage";
+    VARIANT vArg[2];
+    VARIANT vRetval;
+    DISPPARAMS param;
+    BSTR olePrompt, oleOutputPath, oleResult;
+
+    // Code
+    hr = CLSIDFromProgID(L"StableDiffusion.Server", &clsid_SdServer);
+    if (FAILED(hr))
+    {
+        std::cerr << "CLSIDFromProgID Failed !!!" << std::endl;
+		exit(EXIT_FAILURE);
+    }
+   
+    hr = CoCreateInstance(
+        clsid_SdServer,
+        NULL,
+        CLSCTX_LOCAL_SERVER,
+        IID_IDispatch,
+        (void**)&pIDispatch
+    );
+    if (FAILED(hr))
+    {
+        std::cerr << "Failed to obtain Implemented IDispatch Interface !!!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    VariantInit(vArg);
+    {
+        oleResult = NULL;
+        olePrompt = SysAllocString(promptText);
+        oleOutputPath = SysAllocString(L"F:\\Windows-Native-Development\\03-Projects\\Image-Editor\\02-Integration\\Version-03\\PM-Test.png");
+
+        vArg[0].vt = VT_BSTR;
+        vArg[0].bstrVal = oleOutputPath;
+        
+        vArg[1].vt = VT_BSTR;
+        vArg[1].bstrVal = olePrompt;
+
+        param.rgvarg = vArg;
+        param.cArgs = 2;
+        param.cNamedArgs = 0;
+        param.rgdispidNamedArgs = NULL;
+
+        VariantInit(&vRetval);
+        {
+            // Get DISPID of GenerateImage()
+            hr = pIDispatch->GetIDsOfNames(
+                IID_NULL,
+                &szFunctionName,
+                1,
+                GetUserDefaultLCID(),
+                &dispId_GenerateImage
+            );
+            if (FAILED(hr))
+            {
+                std::cerr << "Failed To Obtain ID For GenerateImage() !!!" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            hr = pIDispatch->Invoke(
+                dispId_GenerateImage,
+                IID_NULL,
+                GetUserDefaultLCID(),
+                DISPATCH_METHOD,
+                &param,
+                &vRetval,
+                NULL,
+                NULL
+            );
+            if (FAILED(hr))
+            {
+                std::cerr << "Failed To Invoke GenerateImage() !!!" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            else
+            {
+                if (vRetval.vt == VT_BSTR)
+                    std::wcout << L"Server Result : " << vRetval.bstrVal << std::endl;
+            }
+        }
+        VariantClear(&vRetval);
+    }
+    VariantClear(vArg);
+
+    if (pIDispatch)
+	{
+		pIDispatch->Release();
+		pIDispatch = NULL;
+	}
+
+    return 
+}
+
 
 void SafeInterfaceRelease(IDesaturation *pIDesaturation, ISepia *pISepia, IColorInversion *pIColorInversion)
 {
