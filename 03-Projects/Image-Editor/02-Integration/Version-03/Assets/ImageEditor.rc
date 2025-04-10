@@ -32,11 +32,13 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSM
 CAPTION "Image Editor And Color Picker"
 FONT 11, "Poppins"
 BEGIN
-    GROUPBOX "Image Editor",                                ID_GRPBOX_EDITOR,               10, 15, 180, 90
-        GROUPBOX "Choose Effect",                           ID_GRPBOX_EFFECTS,              20, 30, 100, 65
+    GROUPBOX "Image Editor",                                ID_GRPBOX_EDITOR,               10, 15, 180, 110
+        GROUPBOX "Choose Effect",                           ID_GRPBOX_EFFECTS,              20, 30, 100, 90
             AUTORADIOBUTTON "Desaturation",                 ID_RB_DESAT                     25, 45, 80, 10
             AUTORADIOBUTTON "Sepia",                        ID_RB_SEPIA                     25, 60, 80, 10
             AUTORADIOBUTTON "Color Inversion",              ID_RB_INV                       25, 75, 80, 10
+            AUTORADIOBUTTON "Pixelate",                     ID_RB_PIX                       25, 90, 80, 10
+            AUTORADIOBUTTON "Gaussian Blur",                ID_RB_GAUSBLUR                  25, 105, 80, 10
 
         DEFPUSHBUTTON "Apply Effect",                       ID_APPLY,                       127, 48, 50, 12
         DEFPUSHBUTTON "Reset Image",                        ID_RESET,                       127, 68, 50, 12
@@ -98,3 +100,10 @@ BEGIN
     DEFPUSHBUTTON   "Generate Image",                  ID_GEN_BTN,       110, 70, 80, 14
 END
 
+ID_PROGRESS_DLG DIALOGEX 0, 0, 200, 60
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "AI Image Generation"
+FONT 11, "Poppins"
+BEGIN
+    LTEXT "Generating Image, Please Wait ...", -1, 20, 20, 160, 12, SS_CENTER
+END

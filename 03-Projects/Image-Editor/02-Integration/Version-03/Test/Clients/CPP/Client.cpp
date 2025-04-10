@@ -10,21 +10,25 @@ VARIANT vArg[2];
 VARIANT vRetval;
 DISPPARAMS param;
 
-int main()
+BSTR GenerateImageUsingSD(const wchar_t* promptText, const wchar_t* outputPath)
 {
-    // Start COM Engine
-	HRESULT hr = CoInitialize(NULL);
-	if (FAILED(hr))
-	{
-		std::cerr << "Failed to initialize COM Library ... Exiting Now !!!" << std::endl;
-		exit(EXIT_FAILURE);
-	}
+    // Variable Declarations
+    CLSID clsid_SdServer;
+    IDispatch* pIDispatch = NULL;
+    DISPID dispId_GenerateImage;
+    LPCOLESTR szFunctionName = L"GenerateImage";
+    VARIANT vArg[2];
+    VARIANT vRetval;
+    DISPPARAMS param;
+    BSTR olePrompt = NULL, oleOutputPath = NULL, oleResult = NULL;
+    HRESULT hr = S_OK;
 
+    // Code
     hr = CLSIDFromProgID(L"StableDiffusion.Server", &clsid_SdServer);
     if (FAILED(hr))
     {
-        std::cerr << "CLSIDFromProgID Failed !!!" << std::endl;
-		exit(EXIT_FAILURE);
+        std::cerr << "CLSIDFromProgID Failed For StableDiffusion.Server !!!" << std::endl;
+        return NULL;
     }
    
     hr = CoCreateInstance(
@@ -36,17 +40,23 @@ int main()
     );
     if (FAILED(hr))
     {
-        std::cerr << "Failed to obtain Implemented IDispatch Interface !!!" << std::endl;
-        exit(EXIT_FAILURE);
+        std::cerr << "Failed to obtain Implemented IDispatch Interface of StableDiffusion.Server !!!" << std::endl;
+        return NULL;
     }
 
-    VariantInit(vArg);
+    VariantInit(&vArg[0]);
+    VariantInit(&vArg[1]);
     {
+        // const wchar_t* test = L"F:\\Windows-Native-Development\\03-Projects\\Image-Editor\\02-Integration\\Version-03\\PM-Test.png";
+        oleResult = NULL;
+        olePrompt = SysAllocString(promptText);
+        oleOutputPath = SysAllocString(outputPath);
+
         vArg[0].vt = VT_BSTR;
-        vArg[0].bstrVal = SysAllocString(L"F:\\Windows-Native-Development\\03-Projects\\Image-Editor\\02-Integration\\Version-03\\Test\\Clients\\CPP\\Output.png");
+        vArg[0].bstrVal = oleOutputPath;
         
         vArg[1].vt = VT_BSTR;
-        vArg[1].bstrVal = SysAllocString(L"Ducks on vacation");
+        vArg[1].bstrVal = olePrompt;
 
         param.rgvarg = vArg;
         param.cArgs = 2;
@@ -58,7 +68,7 @@ int main()
             // Get DISPID of GenerateImage()
             hr = pIDispatch->GetIDsOfNames(
                 IID_NULL,
-                &szFunctionName,
+                (LPOLESTR*)&szFunctionName,
                 1,
                 GetUserDefaultLCID(),
                 &dispId_GenerateImage
@@ -66,7 +76,7 @@ int main()
             if (FAILED(hr))
             {
                 std::cerr << "Failed To Obtain ID For GenerateImage() !!!" << std::endl;
-                exit(EXIT_FAILURE);
+                return NULL;
             }
 
             hr = pIDispatch->Invoke(
@@ -82,17 +92,31 @@ int main()
             if (FAILED(hr))
             {
                 std::cerr << "Failed To Invoke GenerateImage() !!!" << std::endl;
-                exit(EXIT_FAILURE);
+                return NULL;
             }
             else
             {
                 if (vRetval.vt == VT_BSTR)
-                    std::wcout << L"Server Result : " << vRetval.bstrVal << std::endl;
+                    oleResult = SysAllocString(vRetval.bstrVal);
             }
         }
         VariantClear(&vRetval);
+
+        if (oleOutputPath)
+        {
+            SysFreeString(oleOutputPath);
+            oleOutputPath = NULL;
+        }
+
+        if (olePrompt)
+        {
+            SysFreeString(olePrompt);
+            olePrompt = NULL;
+        }
+
     }
-    VariantClear(vArg);
+    VariantClear(&vArg[1]);
+    VariantClear(&vArg[0]);
 
     if (pIDispatch)
 	{
@@ -100,6 +124,37 @@ int main()
 		pIDispatch = NULL;
 	}
 
+    return oleResult;
+}
+
+int main()
+{
+    // Start COM Engine
+	HRESULT hr = CoInitialize(NULL);
+	if (FAILED(hr))
+	{
+		std::cerr << "Failed to initialize COM Library ... Exiting Now !!!" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+    wchar_t promptText[512] = L"Bunnies in a garden";
+    wchar_t outputPath[512] = L"C:\\Users\\Atharv\\Desktop\\Test.png";
+
+    BSTR result = GenerateImageUsingSD(promptText, outputPath);
+
+    int size = WideCharToMultiByte(CP_UTF8, 0, result, -1, NULL, 0, NULL, NULL);
+    if (size > 0)
+    {
+        std::string utf8Result(size, 0);
+        WideCharToMultiByte(CP_UTF8, 0, result, -1, &utf8Result[0], size, NULL, NULL);
+
+        // Output to std::cout
+        std::cout << "Image Generation Result: " << utf8Result << std::endl;
+
+        SysFreeString(result);
+    }
+
+    
     CoUninitialize();
 
     return 0;

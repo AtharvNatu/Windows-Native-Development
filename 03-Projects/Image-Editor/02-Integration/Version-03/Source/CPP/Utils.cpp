@@ -119,24 +119,36 @@ HRESULT GetLibraryInterfaces(IDesaturation *pIDesaturation, ISepia *pISepia, ICo
     return hr;
 }
 
-BSTR GenerateImageUsingSD(const wchar_t* promptText, const wchar_t* outputPath)
+const char* GenerateImageUsingSD(const char* promptText, const char* outputPath)
 {
     // Variable Declarations
     CLSID clsid_SdServer;
     IDispatch* pIDispatch = NULL;
     DISPID dispId_GenerateImage;
-    OLECHAR* szFunctionName = L"GenerateImage";
+    LPCOLESTR szFunctionName = L"GenerateImage";
     VARIANT vArg[2];
     VARIANT vRetval;
     DISPPARAMS param;
-    BSTR olePrompt, oleOutputPath, oleResult;
+    BSTR olePrompt = NULL, oleOutputPath = NULL;
+    HRESULT hr = S_OK;
+    const char* result = NULL;
 
     // Code
+
+    // Convert ANSI to BSTR
+    int wlen = MultiByteToWideChar(CP_ACP, 0, promptText, -1, NULL, 0);
+    olePrompt = SysAllocStringLen(0, wlen - 1);
+    MultiByteToWideChar(CP_ACP, 0, promptText, -1, olePrompt, wlen - 1);
+
+    int wlen2 = MultiByteToWideChar(CP_ACP, 0, outputPath, -1, NULL, 0);
+    oleOutputPath = SysAllocStringLen(NULL, wlen2 - 1);
+    MultiByteToWideChar(CP_ACP, 0, outputPath, -1, oleOutputPath, wlen2 - 1);
+
     hr = CLSIDFromProgID(L"StableDiffusion.Server", &clsid_SdServer);
     if (FAILED(hr))
     {
-        std::cerr << "CLSIDFromProgID Failed !!!" << std::endl;
-		exit(EXIT_FAILURE);
+        MessageBox(NULL, TEXT("CLSIDFromProgID Failed For StableDiffusion.Server !!!"), TEXT("PhotoMind"), MB_ICONERROR | MB_OK);
+        return NULL;
     }
    
     hr = CoCreateInstance(
@@ -148,16 +160,13 @@ BSTR GenerateImageUsingSD(const wchar_t* promptText, const wchar_t* outputPath)
     );
     if (FAILED(hr))
     {
-        std::cerr << "Failed to obtain Implemented IDispatch Interface !!!" << std::endl;
-        exit(EXIT_FAILURE);
+        MessageBox(NULL, TEXT("Failed to obtain Implemented IDispatch Interface of StableDiffusion.Server !!!"), TEXT("PhotoMind"), MB_ICONERROR | MB_OK);
+        return NULL;
     }
 
-    VariantInit(vArg);
+    VariantInit(&vArg[0]);
+    VariantInit(&vArg[1]);
     {
-        oleResult = NULL;
-        olePrompt = SysAllocString(promptText);
-        oleOutputPath = SysAllocString(L"F:\\Windows-Native-Development\\03-Projects\\Image-Editor\\02-Integration\\Version-03\\PM-Test.png");
-
         vArg[0].vt = VT_BSTR;
         vArg[0].bstrVal = oleOutputPath;
         
@@ -174,15 +183,15 @@ BSTR GenerateImageUsingSD(const wchar_t* promptText, const wchar_t* outputPath)
             // Get DISPID of GenerateImage()
             hr = pIDispatch->GetIDsOfNames(
                 IID_NULL,
-                &szFunctionName,
+                (LPOLESTR*)&szFunctionName,
                 1,
                 GetUserDefaultLCID(),
                 &dispId_GenerateImage
             );
             if (FAILED(hr))
             {
-                std::cerr << "Failed To Obtain ID For GenerateImage() !!!" << std::endl;
-                exit(EXIT_FAILURE);
+                MessageBox(NULL, TEXT("Failed To Obtain ID For GenerateImage() !!!"), TEXT("PhotoMind"), MB_ICONERROR | MB_OK);
+                return NULL;
             }
 
             hr = pIDispatch->Invoke(
@@ -197,18 +206,38 @@ BSTR GenerateImageUsingSD(const wchar_t* promptText, const wchar_t* outputPath)
             );
             if (FAILED(hr))
             {
-                std::cerr << "Failed To Invoke GenerateImage() !!!" << std::endl;
-                exit(EXIT_FAILURE);
+                MessageBox(NULL, TEXT("Failed To Invoke GenerateImage() !!!"), TEXT("PhotoMind"), MB_ICONERROR | MB_OK);
+                return NULL;
             }
             else
             {
                 if (vRetval.vt == VT_BSTR)
-                    std::wcout << L"Server Result : " << vRetval.bstrVal << std::endl;
+                {
+                    int len = WideCharToMultiByte(CP_ACP, 0, vRetval.bstrVal, -1, NULL, 0, NULL, NULL);
+                    char* ansiResult = (char*)malloc(len);
+                    WideCharToMultiByte(CP_ACP, 0, vRetval.bstrVal, -1, ansiResult, len, NULL, NULL);
+                    result = ansiResult;
+                }
+                    
             }
         }
         VariantClear(&vRetval);
+
+        if (oleOutputPath)
+        {
+            SysFreeString(oleOutputPath);
+            oleOutputPath = NULL;
+        }
+
+        if (olePrompt)
+        {
+            SysFreeString(olePrompt);
+            olePrompt = NULL;
+        }
+
     }
-    VariantClear(vArg);
+    VariantClear(&vArg[1]);
+    VariantClear(&vArg[0]);
 
     if (pIDispatch)
 	{
@@ -216,7 +245,7 @@ BSTR GenerateImageUsingSD(const wchar_t* promptText, const wchar_t* outputPath)
 		pIDispatch = NULL;
 	}
 
-    return 
+    return result;
 }
 
 
@@ -386,7 +415,6 @@ FormattedTime GetFormattedTime(void)
 
 }
 
-
 OPENFILENAME OpenFileDialog(HWND hwndOwner)
 {
 	// Code
@@ -418,6 +446,31 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 	ofn.lpTemplateName = NULL;
 
 	return ofn;
+}
+
+void SanitizePath(const char* input, char* output, size_t maxLen)
+{
+    // Code
+    size_t j = 0;
+
+    for (size_t i = 0; input[i] != '\0'; ++i)
+    {
+        if (j >= maxLen - 1) break;
+
+        if (input[i] == '\\')
+        {
+            if (j < maxLen - 2) 
+            {
+                output[j++] = '\\';
+                output[j++] = '\\';
+            } 
+            else
+                break;
+        }
+        else
+            output[j++] = input[i];
+    }
+    output[j] = '\0';
 }
 
 void CopyToClipboard(HWND hwnd, RGB rgb)
@@ -631,6 +684,79 @@ std::vector<BYTE> GetRawPixelData(cv::Mat* image)
 
     return imageVector;
 }
+
+void applySepia(RGBColor input, RGBColor *output)
+{
+	float tr = 0.393f * input.r + 0.769f * input.g + 0.189f * input.b;
+	float tg = 0.349f * input.r + 0.686f * input.g + 0.168f * input.b;
+	float tb = 0.272f * input.r + 0.534f * input.g + 0.131f * input.b;
+
+	output->r = (BYTE)std::min(255.0f, tr);
+	output->g = (BYTE)std::min(255.0f, tg);
+	output->b = (BYTE)std::min(255.0f, tb);
+}
+
+void applyContrast(RGBColor input, RGBColor* output, float contrast)
+{
+    // Clamp contrast to a reasonable range (e.g., -255 to 255)
+    contrast = std::max(-255.0f, std::min(255.0f, contrast));
+
+    // Normalize contrast value
+    float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
+
+    output->r = (BYTE)std::clamp(factor * (input.r - 128.0f) + 128.0f, 0.0f, 255.0f);
+    output->g = (BYTE)std::clamp(factor * (input.g - 128.0f) + 128.0f, 0.0f, 255.0f);
+    output->b = (BYTE)std::clamp(factor * (input.b - 128.0f) + 128.0f, 0.0f, 255.0f);
+}
+
+
+void applyPixelate(cv::Mat* image, int blockSize)
+{
+    for (int y = 0; y < image->rows; y += blockSize)
+    {
+        for (int x = 0; x < image->cols; x += blockSize)
+        {
+            cv::Vec3i avgColor(0, 0, 0);
+            int count = 0;
+
+            for (int j = 0; j < blockSize && y + j < image->rows; ++j)
+            {
+                for (int i = 0; i < blockSize && x + i < image->cols; ++i)
+                {
+                    cv::Vec3b color = image->at<cv::Vec3b>(y + j, x + i);
+                    avgColor += cv::Vec3i(color[0], color[1], color[2]);
+                    ++count;
+                }
+            }
+
+            cv::Vec3b finalColor(
+                avgColor[0] / count,
+                avgColor[1] / count,
+                avgColor[2] / count
+            );
+
+            for (int j = 0; j < blockSize && y + j < image->rows; ++j)
+            {
+                for (int i = 0; i < blockSize && x + i < image->cols; ++i)
+                {
+                    image->at<cv::Vec3b>(y + j, x + i) = finalColor;
+                }
+            }
+        }
+    }
+}
+
+void applyGaussianBlur(cv::Mat* image, int kernelSize)
+{
+    if (kernelSize % 2 == 0) kernelSize += 1; // Kernel size must be odd
+    if (kernelSize <= 1) return;
+
+    cv::Mat blurred;
+    cv::GaussianBlur(*image, blurred, cv::Size(kernelSize, kernelSize), 0);
+    blurred.copyTo(*image); // Overwrite original
+}
+
+
 //*--------------------------------------------------------------------------------------------
 
 

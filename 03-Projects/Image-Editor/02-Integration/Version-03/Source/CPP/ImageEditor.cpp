@@ -3,6 +3,7 @@
 
 //* Global Variables
 HWND hwndControlsDialog = NULL;
+HWND hwndProgressDialog = NULL;
 HINSTANCE ghInstance = NULL;
 HRESULT hr = S_OK;
 HMENU hMenu = NULL;
@@ -34,34 +35,6 @@ unsigned int giPixelX = 0, giPixelY = 0;
 
 USER user;
 RGB rgb;
-
-//! Image Effects
-float contrast = 50.0f;
-
-void applySepia(RGBColor input, RGBColor *output)
-{
-	float tr = 0.393f * input.r + 0.769f * input.g + 0.189f * input.b;
-	float tg = 0.349f * input.r + 0.686f * input.g + 0.168f * input.b;
-	float tb = 0.272f * input.r + 0.534f * input.g + 0.131f * input.b;
-
-	output->r = (BYTE)std::min(255.0f, tr);
-	output->g = (BYTE)std::min(255.0f, tg);
-	output->b = (BYTE)std::min(255.0f, tb);
-}
-
-void applyContrast(RGBColor input, RGBColor* output, float contrast)
-{
-    // Clamp contrast to a reasonable range (e.g., -255 to 255)
-    contrast = std::max(-255.0f, std::min(255.0f, contrast));
-
-    // Normalize contrast value
-    float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
-
-    output->r = (BYTE)std::clamp(factor * (input.r - 128.0f) + 128.0f, 0.0f, 255.0f);
-    output->g = (BYTE)std::clamp(factor * (input.g - 128.0f) + 128.0f, 0.0f, 255.0f);
-    output->b = (BYTE)std::clamp(factor * (input.b - 128.0f) + 128.0f, 0.0f, 255.0f);
-}
-
 
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -387,10 +360,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 								MessageBox(NULL, TEXT("Failed To Convert Image ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
 							else
 							{
-								if (UseGPU(std::string(szImagePath), &ocvImage))
-									MessageBox(NULL, TEXT("Selected GPU For Processing"), TEXT("Device Selection"), MB_OK);
-								else
-									MessageBox(NULL, TEXT("Selected CPU For Processing"), TEXT("Device Selection"), MB_OK);
+								// if (UseGPU(std::string(szImagePath), &ocvImage))
+								// 	MessageBox(NULL, TEXT("Selected GPU For Processing"), TEXT("Device Selection"), MB_OK);
+								// else
+								// 	MessageBox(NULL, TEXT("Selected CPU For Processing"), TEXT("Device Selection"), MB_OK);
 								
 								renderImage = ocvImage.clone();
 								bImageLoaded = TRUE;
@@ -614,33 +587,24 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						else if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
 						{
 							//! Sepia
-							// for (int yRow = 0; yRow < renderImage.rows; yRow++)
-							// {
-							// 	cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
-							// 	for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
-							// 	{
-							// 		RGBColor input = 
-							// 		{
-							// 			row[xColumn][2],
-							// 			row[xColumn][1],
-							// 			row[xColumn][0],
-							// 		};
+							for (int yRow = 0; yRow < renderImage.rows; yRow++)
+							{
+								cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
+								for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
+								{
+									RGBColor input = 
+									{
+										row[xColumn][2],
+										row[xColumn][1],
+										row[xColumn][0],
+									};
 
-							// 		RGBColor output;
-							// 		// applyContrast(input, &output, contrast);
-							// 		applySepia(input, &output);
+									RGBColor output;
+									applySepia(input, &output);
 									
-							// 		row[xColumn] = cv::Vec3b(output.b, output.g, output.r);
-							// 	}
-							// }
-							// contrast += 10.0f;
-							
-							// cv::Mat grayScaleImage;
-							// cv::cvtColor(renderImage, grayScaleImage, cv::COLOR_BGR2GRAY);
-							// SobelOperator sobelEffect;
-							// sobelEffect.applySobelEdgeDetection(&grayScaleImage, &renderImage);
-							// cv::cvtColor(renderImage, renderImage, cv::COLOR_GRAY2BGR);
-
+									row[xColumn] = cv::Vec3b(output.b, output.g, output.r);
+								}
+							}
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
 						else if (IsDlgButtonChecked(hDlg, ID_RB_INV))
@@ -659,6 +623,16 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 									row[xColumn] = cv::Vec3b(b, g, r);
 								}
 							}
+							InvalidateRect(GetParent(hDlg), NULL, TRUE);
+						}
+						else if (IsDlgButtonChecked(hDlg, ID_RB_PIX))
+						{
+							applyPixelate(&renderImage, 20);
+							InvalidateRect(GetParent(hDlg), NULL, TRUE);
+						}
+						else if (IsDlgButtonChecked(hDlg, ID_RB_GAUSBLUR))
+						{
+							applyGaussianBlur(&renderImage, 21);
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
 					}
@@ -914,13 +888,15 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 }
 
 
+
+
 INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	//*Variable Declarations
 	HDC hdc = NULL;
-	static HBRUSH hBrush = NULL;
-	int controlId;
-	static BOOL bInit = TRUE;
+	char outputPath[MAX_PATH] = "", escapedPath[MAX_PATH * 2];
+	char promptText[1024] = "";
+	DWORD threadId;
 
 	// Code
 	switch(iMsg)
@@ -932,7 +908,54 @@ INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LP
 			switch(LOWORD(wParam))
 			{
 				case ID_GEN_BTN:
-					
+					OPENFILENAME ofn = { 0 };
+					ofn.lStructSize = sizeof(ofn);
+					ofn.hwndOwner = hDlg;
+					ofn.lpstrFilter = TEXT("PNG Image (*.png)\0*.png\0");
+					ofn.lpstrFile = outputPath;
+					ofn.nMaxFile = MAX_PATH;
+					ofn.Flags = OFN_OVERWRITEPROMPT;
+					ofn.lpstrDefExt = TEXT("png");
+				
+					if (GetSaveFileName(&ofn))
+					{
+						SanitizePath(outputPath, escapedPath, sizeof(escapedPath));
+
+						GetDlgItemText(hDlg, ID_PROMPT_TXT, promptText, sizeof(promptText));
+				
+						if (strlen(promptText) == 0 || strlen(outputPath) == 0)
+						{
+							MessageBox(hDlg, TEXT("Please Enter Prompt Text and Set Output Image Path !!!"), TEXT("PhotoMind Error"), MB_OK | MB_ICONERROR);
+							return (INT_PTR)TRUE;
+						}
+						
+						//* Start Progress Dialog Thread
+						HANDLE hThread = CreateThread(
+							NULL,
+							0,
+							ShowProgressDialog,
+							hDlg,
+							0,
+							&threadId
+						);
+						
+						const char* result = GenerateImageUsingSD(promptText, escapedPath);
+						
+						//* Stop Progress Dialog Thread
+						if (hwndProgressDialog)
+						{
+							DestroyWindow(hwndProgressDialog);
+							hwndProgressDialog = NULL;
+						}
+						PostThreadMessage(threadId, WM_QUIT, 0, 0);
+
+						if (result)
+						{
+							MessageBox(hDlg, result, TEXT("PhotoMind Image Generation"), MB_OK | MB_ICONINFORMATION);
+							free((void*)result);
+							result = NULL;
+						}
+					}	
 				break;
 			}
 		return (INT_PTR)TRUE;
@@ -957,5 +980,30 @@ INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LP
 }
 
 
+DWORD WINAPI ShowProgressDialog(LPVOID lpParam)
+{
+	// Variable Declarations
+	MSG msg;
 
+	// Code
+	hwndProgressDialog = CreateDialog(
+		GetModuleHandle(NULL),
+		MAKEINTRESOURCE(ID_PROGRESS_DLG), 
+		(HWND)lpParam, 
+		NULL
+	);
+
+	ShowWindow(hwndProgressDialog, SW_SHOW);
+	
+	while (GetMessage(&msg, NULL, 0, 0))
+	{
+		if(!IsDialogMessage(hwndProgressDialog, &msg))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+
+	return 0;
+}
 

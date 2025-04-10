@@ -108,16 +108,16 @@ class StableDiffusionServer:
             image.save(outputPath, format="PNG")
             
             if self.device == "cuda":
-                return (
-                    f"Compute Device : {self.device.upper()} | "
-                    f"VRAM : {self.vram:.2f} GB | "
-                    f"Time Required : {elapsed_time:.2f} seconds"
-                )
+                return "\n".join([
+                    f"Compute Device : {self.device.upper()}",
+                    f"VRAM           : {self.vram:.2f} GB",
+                    f"Time Required  : {elapsed_time:.2f} seconds"
+                ])
             else:
-                return (
-                    f"Compute Device : {self.device.upper()} | "
-                    f"Time Required : {elapsed_time:.2f} seconds"
-                )
+                return "\n".join([
+                    f"Compute Device : {self.device.upper()}",
+                    f"Time Required  : {elapsed_time:.2f} seconds"
+                ])
 
         except Exception as e:
             return f"Exception in GenerateImage(): {str(e)}"

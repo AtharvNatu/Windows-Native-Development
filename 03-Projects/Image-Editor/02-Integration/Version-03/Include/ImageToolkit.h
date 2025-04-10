@@ -38,9 +38,11 @@
 #define ID_CHK_PICK_LOG_NL                  324
 #define ID_RB_DESAT                         326
 #define ID_RB_SEPIA                         327
-#define ID_RB_INV                           329
 #define ID_APPLY                            328
+#define ID_RB_INV                           329
 #define ID_CHK_PICK_CLP                     330
+#define ID_RB_PIX                           331
+#define ID_RB_GAUSBLUR                      332
 
 #define ABOUT_DLG                           401
 #define ID_ABT_OK                           402
@@ -57,6 +59,8 @@
 #define GENERATE_IMG_DLG                    601
 #define ID_PROMPT_TXT                       602
 #define ID_GEN_BTN                          603
+
+#define ID_PROGRESS_DLG                        701
 
 #define WINDOW_WIDTH 	                    800
 #define WINDOW_HEIGHT	                    600
@@ -75,3 +79,4 @@ INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK RegisterDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK GenerateImageDialogProc(HWND, UINT, WPARAM, LPARAM);
+DWORD WINAPI ShowProgressDialog(LPVOID);

@@ -43,7 +43,7 @@ typedef struct tagRGBColor
 //*--------------------------------------------------------------------------------------------
 BOOL RegisterServerLibararies(void);
 HRESULT GetLibraryInterfaces(IDesaturation*, ISepia*, IColorInversion*, int*);
-BSTR GenerateImageUsingSD(const wchar_t*, const wchar_t*);
+const char* GenerateImageUsingSD(const char*, const char*);
 void SafeInterfaceRelease(IDesaturation*, ISepia*, IColorInversion*);
 //*--------------------------------------------------------------------------------------------
 
@@ -63,6 +63,7 @@ void PrintLog(FILE**, const char *, ...);
 void CloseLogFile(FILE**);
 FormattedTime GetFormattedTime(void);
 OPENFILENAME OpenFileDialog(HWND);
+void SanitizePath(const char* input, char* output, size_t maxLen);
 void CopyToClipboard(HWND, RGB);
 //*--------------------------------------------------------------------------------------------
 
@@ -73,6 +74,9 @@ bool SaveOCVImage(std::string imagePath, cv::Mat* image);
 bool UseGPU(std::string imagePath, cv::Mat* image);
 bool ConvertOCVImageToBGR(cv::Mat* image);
 std::vector<BYTE> GetRawPixelData(cv::Mat* image, int *error);
+void applySepia(RGBColor input, RGBColor *output);
+void applyPixelate(cv::Mat* image, int blockSize);
+void applyGaussianBlur(cv::Mat* image, int kernelSize);
 //*--------------------------------------------------------------------------------------------
 
 //* User Data Related
