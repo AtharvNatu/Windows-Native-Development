@@ -1,0 +1,5 @@
+Windows Registry Editor Version 5.00
+[HKEY_CLASSES_ROOT\CLSID\{2F5B06BE-BF26-4AC1-B64F-5DE34974419D}]
+@="ADN_ImageToolkitDLL"
+[HKEY_CLASSES_ROOT\CLSID\{2F5B06BE-BF26-4AC1-B64F-5DE34974419D}\InProcServer32]
+@="C:\\Windows\\System32\\ImageToolkit.dll"

@@ -1,0 +1,109 @@
+#include <windows.h>
+#include "../Include/ImageToolkit.h"
+
+IE_APP_ICON         ICON    "../Assets/Resources/Logo.ico"
+
+IE_MENU MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open Image",                                   IDM_OPEN
+        MENUITEM "&Exit Application",                             IDM_EXIT
+    END
+
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "&Edit Image",                                   IDM_EDIT
+    END
+
+    POPUP "&AI"
+    BEGIN
+        MENUITEM "&Generate Image",                               IDM_GENERATE
+    END
+
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About",                                        IDM_ABOUT
+    END
+END
+
+IE_DLG DIALOGEX 390, 30, 400, 140
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | WS_VISIBLE
+CAPTION "Image Editor And Color Picker"
+FONT 11, "Poppins"
+BEGIN
+    GROUPBOX "Image Editor",                                ID_GRPBOX_EDITOR,               10, 15, 180, 110
+        GROUPBOX "Choose Effect",                           ID_GRPBOX_EFFECTS,              20, 30, 100, 90
+            AUTORADIOBUTTON "Desaturation",                 ID_RB_DESAT                     25, 45, 80, 10
+            AUTORADIOBUTTON "Sepia",                        ID_RB_SEPIA                     25, 60, 80, 10
+            AUTORADIOBUTTON "Color Inversion",              ID_RB_INV                       25, 75, 80, 10
+            AUTORADIOBUTTON "Pixelate",                     ID_RB_PIX                       25, 90, 80, 10
+            AUTORADIOBUTTON "Gaussian Blur",                ID_RB_GAUSBLUR                  25, 105, 80, 10
+
+        DEFPUSHBUTTON "Apply Effect",                       ID_APPLY,                       127, 48, 50, 12
+        DEFPUSHBUTTON "Reset Image",                        ID_RESET,                       127, 68, 50, 12
+
+    GROUPBOX "Color Picker",                                ID_GRPBOX_PICKER,               210, 15, 180, 90
+        LTEXT "Picked Color : ",                                                            -1, 217, 40, 70, 20
+        EDITTEXT                                            ID_IMG_R,                       270, 28, 20, 12, WS_DISABLED
+        EDITTEXT                                            ID_IMG_G,                       293, 28, 20, 12, WS_DISABLED
+        EDITTEXT                                            ID_IMG_B,                       316, 28, 20, 12, WS_DISABLED
+        CTEXT "R",                                                                          -1, 277, 42, 5, 8
+        CTEXT "G",                                                                          -1, 300, 42, 5, 8
+        CTEXT "B",                                                                          -1, 323, 42, 5, 8
+        AUTOCHECKBOX "Export Picked Colors",                ID_CHK_PICK_LOG,                 225, 50, 100, 20
+        AUTOCHECKBOX "Export Normalized Picked Colors",     ID_CHK_PICK_LOG_NL,              225, 65, 130, 20
+        AUTOCHECKBOX "Copy To Clipboard",                   ID_CHK_PICK_CLP,                 225, 80, 130, 20
+
+    DEFPUSHBUTTON "About",                                  ID_ABOUT,                       250, 120, 40, 15, WS_GROUP
+    DEFPUSHBUTTON "Ok",                                     ID_OK,                          300, 120, 40, 15, WS_GROUP
+    DEFPUSHBUTTON "Exit",                                   ID_EXIT,                        350, 120, 40, 15, WS_GROUP
+END
+
+ABOUT_DLG DIALOGEX 0, 0, 180, 100
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | DS_CENTER
+CAPTION "About PhotoMind"
+FONT 12, "Poppins"
+BEGIN
+    ICON IE_APP_ICON,                                                                          -1, 10, 10, 50, 50
+    CTEXT "PhotoMind",                                                                      -1, 35, 10, 100, 20
+    CTEXT "By",                                                                             -1, 35, 18, 100, 20
+    CTEXT "AstroMediComp",                                                                  -1, 35, 26, 100, 20
+    LTEXT "Software Version : v1.0",                                                        -1, 45, 42, 100, 20
+    LTEXT "Developer : Atharv Natu",                                                        -1, 45, 55, 100, 20
+    LTEXT "Email : natuatharv21@gmail.com",                                                 -1, 45, 69, 120, 20
+    DEFPUSHBUTTON "Ok",                                     ID_ABT_OK,                          73, 85, 25, 10
+END
+
+REGISTER_USER_DLG DIALOGEX 0, 0, 300, 80
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | DS_CENTER
+CAPTION "User Registration"
+FONT 11, "Poppins"
+BEGIN
+    LTEXT "User Name : ",                                                                   -1, 10, 25, 100, 20
+    EDITTEXT                                                ID_FNAME_TXT,                       55, 25, 70, 10
+    EDITTEXT                                                ID_MNAME_TXT,                       135, 25, 70, 10
+    EDITTEXT                                                ID_LNAME_TXT,                       215, 25, 70, 10
+    CTEXT "First Name",                                     ID_FNAME_LBL,                       50, 40, 80, 20, SS_NOTIFY
+    CTEXT "Middle Name",                                    ID_MNAME_LBL,                       130, 40, 80, 20, SS_NOTIFY
+    CTEXT "Last Name",                                      ID_LNAME_LBL,                       210, 40, 80, 20, SS_NOTIFY
+    DEFPUSHBUTTON "Register",                               ID_REGISTER_BTN,                    250, 60, 40, 12
+END
+
+GENERATE_IMG_DLG DIALOGEX 0, 0, 300, 90
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | DS_CENTER
+CAPTION "AI Image Generation"
+FONT 11, "Poppins"
+BEGIN
+    LTEXT           "Enter Prompt to Generate Image",    -1,             20, 10, 260, 20, SS_CENTER | SS_WORDELLIPSIS
+    EDITTEXT                                           ID_PROMPT_TXT,    20, 25, 260, 35, ES_MULTILINE | WS_VSCROLL | ES_AUTOVSCROLL | ES_WANTRETURN
+    DEFPUSHBUTTON   "Generate Image",                  ID_GEN_BTN,       110, 70, 80, 14
+END
+
+ID_PROGRESS_DLG DIALOGEX 0, 0, 200, 60
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "AI Image Generation"
+FONT 11, "Poppins"
+BEGIN
+    LTEXT "Generating Image, Please Wait ...", -1, 20, 20, 160, 12, SS_CENTER
+END
