@@ -21,6 +21,11 @@ BEGIN
         MENUITEM "&Generate Image",                               IDM_GENERATE
     END
 
+    POPUP "&System"
+    BEGIN
+        MENUITEM "&System Details",                               IDM_SYSTEM
+    END
+
     POPUP "&Help"
     BEGIN
         MENUITEM "&About",                                        IDM_ABOUT

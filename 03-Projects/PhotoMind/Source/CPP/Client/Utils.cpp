@@ -248,6 +248,128 @@ const char* GenerateImageUsingSD(const char* promptText, const char* outputPath)
     return result;
 }
 
+BOOL GetSystemDetails(void)
+{
+    // Variable Declarations
+    IWbemLocator* pIWbemLocator = NULL;
+    IWbemServices* pIWbemServices = NULL;
+    IWbemClassObject* pIWbemClassObject = NULL;
+    IEnumWbemClassObject *pIEnumWbemClassObject = NULL;
+    VARIANT vtProperties;
+    ULONG uRet = 0;
+    HRESULT hr = S_OK;
+
+    // Code
+    hr = CoInitializeEx(0, COINIT_MULTITHREADED);
+    if (FAILED(hr))
+        return FALSE;
+
+    hr = CoInitializeSecurity(
+        NULL,
+        -1,
+        NULL,
+        NULL,
+        RPC_C_AUTHN_LEVEL_DEFAULT,
+        RPC_C_IMP_LEVEL_IMPERSONATE,
+        NULL,
+        EOAC_NONE,
+        NULL
+    );
+    if (FAILED(hr))
+    {
+        CoUninitialize();
+        return FALSE;
+    }
+
+    hr = CoCreateInstance(
+        CLSID_WbemLocator,
+        0,
+        CLSCTX_INPROC_SERVER,
+        IID_IWbemLocator,
+        (LPVOID*)&pIWbemLocator
+    );
+    if (FAILED(hr))
+    {
+        CoUninitialize();
+        return FALSE;
+    }
+
+    hr = pIWbemLocator->ConnectServer(
+        _bstr_t(L"ROOT\\CIMV2"),
+        NULL,
+        NULL,
+        0,
+        NULL,
+        0,
+        0,
+        &pIWbemServices
+    );
+    if (FAILED(hr))
+    {
+        pIWbemLocator->Release();
+        pIWbemLocator = NULL;
+        CoUninitialize();
+        return FALSE;
+    }
+
+    hr = CoSetProxyBlanket(
+        pIWbemServices,
+        RPC_C_AUTHN_WINNT,
+        RPC_C_AUTHZ_NONE,
+        NULL,
+        RPC_C_AUTHN_LEVEL_CALL,
+        RPC_C_IMP_LEVEL_IMPERSONATE,
+        NULL,
+        EOAC_NONE
+    );
+    if (FAILED(hr))
+    {
+        pIWbemServices->Release();
+        pIWbemServices = NULL;
+        pIWbemLocator->Release();
+        pIWbemLocator = NULL;
+        CoUninitialize();
+        return FALSE;
+    }
+
+    // CPU Info Query
+    hr = pIWbemServices->ExecQuery(
+        bstr_t("WOL"),
+        bstr_t("SELECT * FROM Win32_Processor"),
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY;
+        NULL,
+        &pIEnumWbemClassObject
+    );
+    if (FAILED(hr))
+    {
+        pIWbemServices->Release();
+        pIWbemServices = NULL;
+        pIWbemLocator->Release();
+        pIWbemLocator = NULL;
+        CoUninitialize();
+        return FALSE;
+    }
+
+    while (pIEnumWbemClassObject)
+    {
+        HRESULT hrNext = pIEnumWbemClassObject->Next(
+            WBEM_INFINITE,
+            1,
+            &pIWbemClassObject,
+            &uRet
+        );
+
+        VariantInit(&vtProperties);
+        {
+            hrNext = pIWbemClassObject->Get(attr)
+        }
+        VariantClear(&vtProperties);
+    }
+
+    CoUninitialize();
+
+    return TRUE;
+}
 
 void SafeInterfaceRelease(IDesaturation *pIDesaturation, ISepia *pISepia, IColorInversion *pIColorInversion)
 {
@@ -440,6 +562,42 @@ OPENFILENAME OpenFileDialog(HWND hwndOwner)
 	ofn.lpTemplateName = NULL;
 
 	return ofn;
+}
+
+const char* SaveFileDialog(HWND hwndOwner)
+{
+	// Code
+	OPENFILENAME ofn;
+	static TCHAR szFileName[_MAX_PATH];
+
+	ZeroMemory(&ofn, sizeof(OPENFILENAME));
+
+	szFileName[0] = '\0';
+
+    ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = hwndOwner;
+	ofn.hInstance = NULL;
+	ofn.lpstrCustomFilter = NULL;
+	ofn.nMaxCustFilter = 0;
+	ofn.nFilterIndex = 1;
+    ofn.lpstrFilter = TEXT("Image Files (*.bmp;*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.webp)\0*.bmp;*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.webp\0All Files (*.*)\0*.*\0");
+	ofn.lpstrFile = szFileName;
+	ofn.nMaxFile = _MAX_PATH;
+	ofn.lpstrFileTitle = NULL;
+	ofn.nMaxFileTitle = _MAX_FNAME + _MAX_EXT;
+	ofn.lpstrInitialDir = NULL;
+	ofn.lpstrTitle = TEXT("Save Image");
+	ofn.Flags = OFN_OVERWRITEPROMPT;
+	ofn.nFileOffset = 0;
+	ofn.nFileExtension = 0;
+	ofn.lpstrDefExt = TEXT("png");
+	ofn.lCustData = 0L;
+	ofn.lpTemplateName = NULL;
+
+	if (GetSaveFileName(&ofn))
+        return szFileName;
+
+    return NULL;
 }
 
 void SanitizePath(const char* input, char* output, size_t maxLength)

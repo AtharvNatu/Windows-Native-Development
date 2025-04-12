@@ -1,9 +1,15 @@
 #include "ImageToolkit.h"
 #include "ImageEditor.h"
 
+// COM
+#include <WbemIdl.h>
+
+// C++ Headers
 #include <iostream>
 #include <cstdlib>
 #include <filesystem>
+
+// OpenCV Headers
 #include <opencv2/opencv.hpp>
 
 //* Global Variable Declarations
@@ -39,11 +45,22 @@ typedef struct tagRGBColor
     BYTE b;
 } RGBColor;
 
+typedef struct tagSystemDetails
+{
+    std::string cpuName;
+    int cpuCores;
+    int cpuThreads;
+    size_t ram;
+    std::string gpuName;
+    size_t gpuVRAM;
+} SysInfo;
+
 //* COM Related
 //*--------------------------------------------------------------------------------------------
 BOOL RegisterServerLibararies(void);
 HRESULT GetLibraryInterfaces(IDesaturation*, ISepia*, IColorInversion*, int*);
 const char* GenerateImageUsingSD(const char*, const char*);
+BOOL GetSystemDetails();
 void SafeInterfaceRelease(IDesaturation*, ISepia*, IColorInversion*);
 //*--------------------------------------------------------------------------------------------
 
@@ -62,6 +79,7 @@ void CloseLogFile(FILE**);
 const char* AppendPath(const char*);
 FormattedTime GetFormattedTime(void);
 OPENFILENAME OpenFileDialog(HWND);
+const char* SaveFileDialog(HWND hwndOwner);
 void SanitizePath(const char*, char*, size_t);
 void CopyToClipboard(HWND, RGB);
 //*--------------------------------------------------------------------------------------------

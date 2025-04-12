@@ -7,7 +7,7 @@
 #include <string.h>
 
 //! App Mode
-#define DEBUG                               0
+#define DEBUG                               1
 
 //! Icon
 #define IE_APP_ICON                         101
@@ -20,6 +20,7 @@
 #define IDM_EDIT                            204
 #define IDM_ABOUT                           205
 #define IDM_GENERATE                        206
+#define IDM_SYSTEM                          207
 
 //! Dialogs
 #define IE_DLG                              301

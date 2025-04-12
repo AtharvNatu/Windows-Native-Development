@@ -1,5 +1,5 @@
 #include "Utils.h"
-#include "ImageEffects.cuh"
+// #include "ImageEffects.cuh"
 
 //* Global Variables
 HWND hwndControlsDialog = NULL;
@@ -23,6 +23,8 @@ BOOL bValidateFirstName = FALSE;
 BOOL bValidateMiddleName = FALSE;
 BOOL bValidateLastName = FALSE;
 BOOL bImageLoaded = FALSE;
+BOOL bUseGPU = FALSE;
+BOOL bShowSystemDetails = FALSE;
 
 FILE* gpFile_UserLog = NULL;
 FILE* gpFile_ColorPickerLog = NULL;
@@ -46,6 +48,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	TCHAR szAppName[] = TEXT("MyWindow");
 
 	//* Code
+	if (GetSystemDetails())
+		MessageBox(NULL, TEXT("Yes"), TEXT("COINIT"), MB_OK);
+	else
+		MessageBox(NULL, TEXT("No"), TEXT("COINIT"), MB_OK);
 
 	//! Start COM Engine
 	hr = CoInitialize(NULL);
@@ -233,13 +239,23 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			GetClientRect(hwnd, &rc);
 			hdc = BeginPaint(hwnd, &ps);
 			{
-				if (!bImageLoaded)
+				if (!bImageLoaded && !bShowSystemDetails)
 				{
 					CreateAppFont(&hFont, TEXT("Poppins"), 36);
 					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 					SetBkColor(hdc, BLUE_BG);
 					SetTextColor(hdc, RGB(44, 156, 242));
 					DrawText(hdc, TEXT("Click On File Menu And Select 'Open' To Open An Image File"), -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+					SelectObject(hdc, hOldFont);
+					DeleteObject(hFont);
+				}
+				else if (bShowSystemDetails)
+				{
+					CreateAppFont(&hFont, TEXT("Poppins"), 36);
+					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+					SetBkColor(hdc, BLUE_BG);
+					SetTextColor(hdc, RGB(44, 156, 242));
+					DrawText(hdc, TEXT("Intel Core i7"), -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 					SelectObject(hdc, hOldFont);
 					DeleteObject(hFont);
 				}
@@ -363,10 +379,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 								MessageBox(NULL, TEXT("Failed To Convert Image ... Exiting !!!"), TEXT("Error"), MB_OK | MB_ICONERROR);
 							else
 							{
-								// if (UseGPU(std::string(szImagePath), &ocvImage))
-								// 	MessageBox(NULL, TEXT("Selected GPU For Processing"), TEXT("Device Selection"), MB_OK);
-								// else
-								// 	MessageBox(NULL, TEXT("Selected CPU For Processing"), TEXT("Device Selection"), MB_OK);
+								if (UseGPU(std::string(szImagePath), &ocvImage))
+									bUseGPU = TRUE;
+								else
+									bUseGPU = FALSE;
 								
 								renderImage = ocvImage.clone();
 								bImageLoaded = TRUE;
@@ -390,6 +406,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 				case IDM_GENERATE:
 					DialogBox(ghInstance, MAKEINTRESOURCE(GENERATE_IMG_DLG), hwnd, GenerateImageDialogProc);		
+				break;
+
+				case IDM_SYSTEM:
+					bShowSystemDetails = TRUE;
+					InvalidateRect(hwnd, NULL, TRUE);
 				break;
 
 				case IDM_ABOUT:
@@ -449,6 +470,8 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 
 	static char rgbBuffer[5];
 	static BOOL bExportColorPickerLog = FALSE, bExportNormalizedColorPickerLog = FALSE, bCopyToClipboard = FALSE;
+	const char* path;
+	char escapedPath[MAX_PATH * 2];
 
 	// Code
 	switch(iMsg)
@@ -860,8 +883,9 @@ INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LP
 {
 	//*Variable Declarations
 	HDC hdc = NULL;
-	char outputPath[MAX_PATH] = "", escapedPath[MAX_PATH * 2];
+	char escapedPath[MAX_PATH * 2];
 	char promptText[1024] = "";
+	const char* outputPath;
 	DWORD threadId;
 
 	// Code
@@ -874,53 +898,43 @@ INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LP
 			switch(LOWORD(wParam))
 			{
 				case ID_GEN_BTN:
-					OPENFILENAME ofn = { 0 };
-					ofn.lStructSize = sizeof(ofn);
-					ofn.hwndOwner = hDlg;
-					ofn.lpstrFilter = TEXT("PNG Image (*.png)\0*.png\0");
-					ofn.lpstrFile = outputPath;
-					ofn.nMaxFile = MAX_PATH;
-					ofn.Flags = OFN_OVERWRITEPROMPT;
-					ofn.lpstrDefExt = TEXT("png");
 				
-					if (GetSaveFileName(&ofn))
+					outputPath = SaveFileDialog(hDlg);
+					SanitizePath(outputPath, escapedPath, sizeof(escapedPath));
+
+					GetDlgItemText(hDlg, ID_PROMPT_TXT, promptText, sizeof(promptText));
+			
+					if (strlen(promptText) == 0 || strlen(outputPath) == 0)
 					{
-						SanitizePath(outputPath, escapedPath, sizeof(escapedPath));
+						MessageBox(hDlg, TEXT("Please Enter Prompt Text and Set Output Image Path !!!"), TEXT("PhotoMind Error"), MB_OK | MB_ICONERROR);
+						return (INT_PTR)TRUE;
+					}
+					
+					//* Start Progress Dialog Thread
+					HANDLE hThread = CreateThread(
+						NULL,
+						0,
+						ShowProgressDialog,
+						hDlg,
+						0,
+						&threadId
+					);
+					
+					const char* result = GenerateImageUsingSD(promptText, escapedPath);
+					
+					//* Stop Progress Dialog Thread
+					if (hwndProgressDialog)
+					{
+						DestroyWindow(hwndProgressDialog);
+						hwndProgressDialog = NULL;
+					}
+					PostThreadMessage(threadId, WM_QUIT, 0, 0);
 
-						GetDlgItemText(hDlg, ID_PROMPT_TXT, promptText, sizeof(promptText));
-				
-						if (strlen(promptText) == 0 || strlen(outputPath) == 0)
-						{
-							MessageBox(hDlg, TEXT("Please Enter Prompt Text and Set Output Image Path !!!"), TEXT("PhotoMind Error"), MB_OK | MB_ICONERROR);
-							return (INT_PTR)TRUE;
-						}
-						
-						//* Start Progress Dialog Thread
-						HANDLE hThread = CreateThread(
-							NULL,
-							0,
-							ShowProgressDialog,
-							hDlg,
-							0,
-							&threadId
-						);
-						
-						const char* result = GenerateImageUsingSD(promptText, escapedPath);
-						
-						//* Stop Progress Dialog Thread
-						if (hwndProgressDialog)
-						{
-							DestroyWindow(hwndProgressDialog);
-							hwndProgressDialog = NULL;
-						}
-						PostThreadMessage(threadId, WM_QUIT, 0, 0);
-
-						if (result)
-						{
-							MessageBox(hDlg, result, TEXT("PhotoMind Image Generation"), MB_OK | MB_ICONINFORMATION);
-							free((void*)result);
-							result = NULL;
-						}
+					if (result)
+					{
+						MessageBox(hDlg, result, TEXT("PhotoMind Image Generation"), MB_OK | MB_ICONINFORMATION);
+						free((void*)result);
+						result = NULL;
 					}	
 				break;
 			}
