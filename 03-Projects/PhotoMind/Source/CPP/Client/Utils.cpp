@@ -336,7 +336,7 @@ BOOL GetSystemDetails(void)
     hr = pIWbemServices->ExecQuery(
         bstr_t("WOL"),
         bstr_t("SELECT * FROM Win32_Processor"),
-        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY;
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
         NULL,
         &pIEnumWbemClassObject
     );
@@ -350,21 +350,21 @@ BOOL GetSystemDetails(void)
         return FALSE;
     }
 
-    while (pIEnumWbemClassObject)
-    {
-        HRESULT hrNext = pIEnumWbemClassObject->Next(
-            WBEM_INFINITE,
-            1,
-            &pIWbemClassObject,
-            &uRet
-        );
+    // while (pIEnumWbemClassObject)
+    // {
+    //     HRESULT hrNext = pIEnumWbemClassObject->Next(
+    //         WBEM_INFINITE,
+    //         1,
+    //         &pIWbemClassObject,
+    //         &uRet
+    //     );
 
-        VariantInit(&vtProperties);
-        {
-            hrNext = pIWbemClassObject->Get(attr)
-        }
-        VariantClear(&vtProperties);
-    }
+    //     VariantInit(&vtProperties);
+    //     {
+    //         hrNext = pIWbemClassObject->Get(attr)
+    //     }
+    //     VariantClear(&vtProperties);
+    // }
 
     CoUninitialize();
 

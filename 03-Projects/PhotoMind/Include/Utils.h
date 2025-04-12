@@ -2,6 +2,7 @@
 #include "ImageEditor.h"
 
 // COM
+#include <comdef.h>
 #include <WbemIdl.h>
 
 // C++ Headers
