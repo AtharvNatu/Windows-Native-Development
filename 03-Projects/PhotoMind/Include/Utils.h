@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <filesystem>
 
+
 // OpenCV Headers
 #include <opencv2/opencv.hpp>
 
@@ -58,13 +59,31 @@ typedef struct tagSystemDetails
     size_t gpuVRAM;
 } SYSINFO;
 
+enum CPU
+{
+    Intel,
+    AMD
+};
+
+enum GPU
+{
+    UHD,
+    Iris,
+    ARC,
+    Nvidia,
+    Radeon,
+    Undefined
+};
+
 //* COM Related
 //*--------------------------------------------------------------------------------------------
 BOOL RegisterServerLibararies(void);
 HRESULT GetLibraryInterfaces(IDesaturation*, ISepia*, IColorInversion*, int*);
 const char* GenerateImageUsingSD(const char*, const char*);
-BOOL GetSystemDetails(SYSINFO*);
 void SafeInterfaceRelease(IDesaturation*, ISepia*, IColorInversion*);
+BOOL GetSystemDetails(SYSINFO*);
+CPU GetCPUInfo(std::wstring);
+GPU GetGPUInfo(std::wstring);
 //*--------------------------------------------------------------------------------------------
 
 //* UI Related
@@ -78,6 +97,7 @@ void CreateAppFont(HFONT*, const TCHAR*, int);
 //*--------------------------------------------------------------------------------------------
 BOOL CreateOpenLogFile(FILE**, const char*, const char*);
 void PrintLog(FILE**, const char *, ...);
+void PrintLogWithTime(FILE**, const char *, ...);
 void CloseLogFile(FILE**);
 const char* AppendPath(const char*);
 FormattedTime GetFormattedTime(void);

@@ -6,11 +6,14 @@
 #include <Shlwapi.h>
 #include <string.h>
 
+
 //! App Mode
 #define DEBUG                               0
 
 //! Icon
 #define PM_APP_ICON                         101
+
+//! Bitmaps
 #define PM_SI_INTEL_CPU                     102
 #define PM_SI_INTEL_ARC                     103
 #define PM_SI_INTEL_UHD                     104
@@ -68,10 +71,14 @@
 #define ID_PROMPT_TXT                       602
 #define ID_GEN_BTN                          603
 
-#define ID_PROGRESS_DLG                        701
+#define ID_PROGRESS_DLG                     701
+#define ID_SPIN_1                           702
+#define ID_SPIN_2                           703
+#define ID_SPIN_3                           704
+#define ID_SPIN_4                           705
 
-#define WINDOW_WIDTH 	                    800
-#define WINDOW_HEIGHT	                    600
+#define WINDOW_WIDTH 	                    1024
+#define WINDOW_HEIGHT	                    768
 
 #define TEXT_LENGTH                         50
 
@@ -87,11 +94,12 @@ INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK RegisterDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK GenerateImageDialogProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK ProgrssDialogProc(HWND, UINT, WPARAM, LPARAM);
 
 //* Thread Function Declarations
 DWORD WINAPI ShowProgressDialog(LPVOID);
 
 //* Function Declarations
 BOOL RegisterUser(void);
-void DisplaySystemDetails(void);
-
+void DisplaySystemDetails(HDC, int);
+void DisplayStatusBar(HDC, int, int, const char*);

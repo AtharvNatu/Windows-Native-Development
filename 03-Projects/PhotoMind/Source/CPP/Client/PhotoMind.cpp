@@ -9,6 +9,7 @@ HRESULT hr = S_OK;
 HMENU hMenu = NULL;
 HBITMAP hBitmap = NULL, hOSBitmap = NULL, hCPUBitmap = NULL, hGPUBitmap = NULL;
 HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
+HBRUSH hMainBrush = NULL;
 
 cv::Mat ocvImage, renderImage;
 COLORREF desaturatedPixelColor, sepiaPixelColor, negativePixelColor;
@@ -60,6 +61,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	}
 
 	ZeroMemory((void*)&wndclass, sizeof(WNDCLASSEX));
+
+	hMainBrush = CreateSolidBrush(BLUE_BG);
 	
 	//* Initialization of Window Class
 	wndclass.cbSize = sizeof(WNDCLASSEX);
@@ -69,7 +72,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wndclass.lpfnWndProc = WndProc;
 	wndclass.lpszClassName = szAppName;
 	wndclass.lpszMenuName = MAKEINTRESOURCE(PM_MENU);
-	wndclass.hbrBackground = CreateSolidBrush(BLUE_BG);
+	wndclass.hbrBackground = hMainBrush;
 	wndclass.hInstance = hInstance;
 	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(PM_APP_ICON));
 	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(PM_APP_ICON));
@@ -78,13 +81,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	//* Register the above created class
 	RegisterClassEx(&wndclass);
 
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	int windowY = (screenHeight - WINDOW_HEIGHT) / 2;
+
 	//* Create Window in Memory
 	hwnd = CreateWindow(
 		szAppName,
 		TEXT("PhotoMind v1.0"),
 		WS_OVERLAPPEDWINDOW,
-		0,
-		0,
+		50,
+		windowY,
 		WINDOW_WIDTH,
 		WINDOW_HEIGHT,
 		NULL,
@@ -223,18 +229,73 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			//! Load System Information Bitmaps
-			hCPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_INTEL_CPU));
-			if (hCPUBitmap == NULL)
+			switch(GetCPUInfo(sysInfo.cpuName))
 			{
-				MessageBox(hwnd, TEXT("Failed To Load CPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
-				DestroyWindow(hwnd);
+				case CPU::Intel:
+					hCPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_INTEL_CPU));
+					if (hCPUBitmap == NULL)
+					{
+						MessageBox(hwnd, TEXT("Failed To Load CPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+						DestroyWindow(hwnd);
+					}
+				break;
+
+				case CPU::AMD:
+					hCPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_AMD_CPU));
+					if (hCPUBitmap == NULL)
+					{
+						MessageBox(hwnd, TEXT("Failed To Load CPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+						DestroyWindow(hwnd);
+					}
+				break;
 			}
 
-			hGPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_NVIDIA));
-			if (hGPUBitmap == NULL)
+			switch(GetGPUInfo(sysInfo.gpuName))
 			{
-				MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
-				DestroyWindow(hwnd);
+				case GPU::UHD:
+					hGPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_INTEL_UHD));
+					if (hGPUBitmap == NULL)
+					{
+						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+						DestroyWindow(hwnd);
+					}
+				break;
+				
+				case GPU::Iris:
+					hGPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_INTEL_IRIS));
+					if (hGPUBitmap == NULL)
+					{
+						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+						DestroyWindow(hwnd);
+					}
+				break;
+
+				case GPU::ARC:
+					hGPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_INTEL_ARC));
+					if (hGPUBitmap == NULL)
+					{
+						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+						DestroyWindow(hwnd);
+					}
+				break;
+
+				case GPU::Nvidia:
+					hGPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_NVIDIA));
+					if (hGPUBitmap == NULL)
+					{
+						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+						DestroyWindow(hwnd);
+					}
+				break;
+
+				case GPU::Radeon:
+					hGPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_AMD_GPU));
+					if (hGPUBitmap == NULL)
+					{
+						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+						DestroyWindow(hwnd);
+					}
+				break;
 			}
 
 			hOSBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_WINDOWS));
@@ -261,7 +322,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			{
 				if (!bImageLoaded && !bShowSystemDetails)
 				{
-					CreateAppFont(&hFont, TEXT("Poppins"), 36);
+					CreateAppFont(&hFont, TEXT("Poppins"), 40);
 					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 					SetBkColor(hdc, BLUE_BG);
 					SetTextColor(hdc, RGB(44, 156, 242));
@@ -271,74 +332,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				}
 				else if (bShowSystemDetails)
 				{
-					int logoSize = 100;
-					int spacing = 30;
-					int totalWidth = (logoSize * 3) + (spacing * 2);
-					int startX = (resizedWindowWidth - totalWidth) / 2;
-					int y = 40;
-					HBITMAP hOldBitmap = NULL;
-					
-					std::wstringstream ss;
-					ss << L"OS    : " << sysInfo.osName << L" (v" << sysInfo.osVersion << L")\n";
-					ss << L"CPU   : " << sysInfo.cpuName << L"\n";
-					ss << L"Cores : " << sysInfo.cpuCores << L"\n";
-					ss << L"Threads : " << sysInfo.cpuThreads << L"\n";
-					double ram = sysInfo.ram / (1024.0 * 1024 * 1024);
-					ss << L"RAM   : " << (int)ceil(ram) << L" GB\n";
-					ss << L"GPU   : " << sysInfo.gpuName << L"\n";
-					double vram = sysInfo.gpuVRAM / (1024.0 * 1024 * 1024);
-					ss << L"VRAM  : " << (int)ceil(vram) << L" GB\n";
-					
-					hdcMem = CreateCompatibleDC(hdc);
-					BITMAP bmp = {};
-					HBITMAP hLogos[] = { hCPUBitmap, hGPUBitmap, hOSBitmap };
-					SetStretchBltMode(hdc, HALFTONE);
-					SetBrushOrgEx(hdc, 0, 0, NULL);
-					for (int i = 0; i < 3; i++)
-					{
-						GetObject(hLogos[i], sizeof(BITMAP), &bmp);
-						hOldBitmap = (HBITMAP)SelectObject(hdcMem, hLogos[i]);
-						
-						StretchBlt(
-							hdc, 
-							startX + i * (logoSize + spacing), 
-							y, 
-							logoSize, 
-							logoSize, 
-							hdcMem, 
-							0, 
-							0, 
-							bmp.bmWidth, 
-							bmp.bmHeight, 
-							SRCCOPY
-						);
-						SelectObject(hdcMem, hOldBitmap);
-					}
-					if (hdcMem)
-					{
-						SelectObject(hdcMem, hOldBitmap);
-						DeleteDC(hdcMem);
-						hdcMem = NULL;
-					}
-
-					RECT rcText;
-					int textWidth = 600;
-					rcText.left = (resizedWindowWidth - textWidth) / 2;
-					rcText.right = rcText.left + textWidth;
-					rcText.top = y + logoSize + 40;
-					rcText.bottom = 600;
-
-					CreateAppFont(&hFont, TEXT("Poppins"), 32);
-					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-					SetBkColor(hdc, BLUE_BG);
-					SetTextColor(hdc, RGB(0, 0, 139));
-					DrawTextW(hdc, ss.str().c_str(), -1, &rcText, DT_LEFT | DT_TOP | DT_WORDBREAK);
-					SelectObject(hdc, hOldFont);
-					DeleteObject(hFont);
+					DisplaySystemDetails(hdc, resizedWindowWidth);
 				}
 				else
 				{
-
 					BITMAPINFO bitmapInfo;
 					ZeroMemory(&bitmapInfo, sizeof(BITMAPINFO));
 					bitmapInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -396,6 +393,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						DeleteDC(hdcMem);
 						hdcMem = NULL;
 					}
+
+					DisplayStatusBar(hdc, resizedWindowWidth, resizedWindowHeight, szImagePath);
 				}
 			}
 			if (hdc)
@@ -405,27 +404,36 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			}
 		break;
 
-		case WM_MOUSEMOVE:
-			// if (bImageLoaded)
-			// {
-			// 	unsigned int pickedPixelX = GET_X_LPARAM(lParam);
-			// 	unsigned int pickedPixelY = GET_Y_LPARAM(lParam);
 
-			// 	if (pickedPixelX >= 0 && pickedPixelX <= resizedWindowWidth && pickedPixelY >= 0 && pickedPixelY <= resizedWindowHeight)
-			// 		SetCursor(hPickerCursor);
-			// 	else
-			// 		SetCursor(hDefaultCursor);
-			// }
-			if (bImageLoaded)
-				SetCursor(hPickerCursor);
-			else
-				SetCursor(hDefaultCursor);
+		case WM_SETCURSOR:
+			if (LOWORD(lParam) == HTCLIENT)
+			{
+				POINT pt;
+				GetCursorPos(&pt);
+				ScreenToClient(hwnd, &pt);
+
+				HCURSOR currentCursor;
+
+				if (bImageLoaded && pt.x >= 0 && pt.x <= resizedWindowWidth && pt.y >= 0 && pt.y <= resizedWindowHeight)
+					currentCursor = hPickerCursor;
+				else
+					currentCursor = hDefaultCursor;
+				
+				SetCursor(currentCursor);
+
+				return TRUE;
+			}
 		break;
 
 		case WM_SETFOCUS:
 			bUserRegistered = CheckUserStatus("User-Log.log");
 			if (!bUserRegistered)
 				DialogBox(ghInstance, MAKEINTRESOURCE(REGISTER_USER_DLG), hwnd, RegisterDialogProc);
+			if (!CreateOpenLogFile(&gpFile_UserLog, "User-Log.log", "a+"))
+			{
+				MessageBox(NULL, TEXT("Failed To Create or Open User Log File ... Exiting Now !!!"), TEXT("PhotoMind Error"), MB_ICONERROR | MB_OK);
+				DestroyWindow(hwnd);
+			}
 		break;
 
 		case WM_LBUTTONDOWN:
@@ -464,7 +472,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 								
 								renderImage = ocvImage.clone();
 								bImageLoaded = TRUE;
-								// SetCursor(hPickerCursor);
+								PrintLogWithTime(&gpFile_UserLog, "User Loaded Image : %s\n", szImagePath);
 								EnableMenuItem(hMenu, IDM_EDIT, MF_BYCOMMAND | MF_ENABLED);
 								DrawMenuBar(hwnd);
 								InvalidateRect(hwnd, NULL, TRUE);
@@ -475,19 +483,23 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				break;
 
 				case IDM_EXIT:
+					PrintLogWithTime(&gpFile_UserLog, "User Closed The Application\n");
 					DestroyWindow(hwnd);
 					hwnd = NULL;
 				break;
 
 				case IDM_EDIT:
+					PrintLogWithTime(&gpFile_UserLog, "User Opened The Edit Controls Dialog\n");
 					hwndControlsDialog = CreateDialog(ghInstance, MAKEINTRESOURCE(PM_DLG), hwnd, ControlsDialogProc);
 				break;
 
 				case IDM_GENERATE:
+					PrintLogWithTime(&gpFile_UserLog, "User Generated an AI Image\n");
 					DialogBox(ghInstance, MAKEINTRESOURCE(GENERATE_IMG_DLG), hwnd, GenerateImageDialogProc);		
 				break;
 
 				case IDM_SYSTEM:
+					PrintLogWithTime(&gpFile_UserLog, "User Explored The System Details\n");
 					bShowSystemDetails = TRUE;
 					InvalidateRect(hwnd, NULL, TRUE);
 				break;
@@ -531,6 +543,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			renderImage.release();
 			ocvImage.release();
 
+			if (hMainBrush)
+			{
+				DeleteObject(hMainBrush);
+				hMainBrush = NULL;
+			}
+
 			PostQuitMessage(0);
 
 		break;
@@ -550,6 +568,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	HWND hwndParent = NULL;
 	HBRUSH hBrush = NULL;
 	PAINTSTRUCT ps;
+	static HBRUSH hBgBrush = NULL;
 
 	static char rgbBuffer[5];
 	static BOOL bExportColorPickerLog = FALSE, bExportNormalizedColorPickerLog = FALSE, bCopyToClipboard = FALSE;
@@ -561,22 +580,25 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	{
 		case WM_INITDIALOG:
 			ZeroMemory(&ps, sizeof(PAINTSTRUCT));
+			hBgBrush = CreateSolidBrush(BLUE_BG);
 		return (INT_PTR)TRUE;
 
 		case WM_CTLCOLORDLG:
-			return (INT_PTR)CreateSolidBrush(BLUE_BG);
+			return (INT_PTR)hBgBrush;
 
 		case WM_CTLCOLORSTATIC:
 			hdc = (HDC)wParam;
 			SetTextColor(hdc, RGB(0, 0, 0));
 			SetBkMode(hdc, TRANSPARENT);
-		return (INT_PTR)CreateSolidBrush(BLUE_BG);
+		return (INT_PTR)hBgBrush;
 
 		case WM_PAINT:
 			hdcPaint = BeginPaint(hDlg, &ps);
 			{
 				if (bColorPick)
 				{
+					PrintLogWithTime(&gpFile_UserLog, "User Picked A Color\n");
+
 					hwndParent = GetParent(hDlg);
 					if (hwndParent == NULL)
 					{
@@ -611,40 +633,14 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 
 					if (bExportColorPickerLog)
 					{
-						formattedTime = GetFormattedTime();
-						PrintLog(
-							&gpFile_ColorPickerLog, 
-							"[%02d-%02d-%d %02d:%02d:%02d %s] Picked Color (RGB) : %d, %d, %d\n", 
-							formattedTime.day, 
-							formattedTime.month, 
-							formattedTime.year, 
-							formattedTime.hour, 
-							formattedTime.minute, 
-							formattedTime.second, 
-							formattedTime.amPm,
-							rgb.R,
-							rgb.G,
-							rgb.B
-						);
+						PrintLogWithTime(&gpFile_UserLog, "User Exported Picked Color\n");
+						PrintLogWithTime(&gpFile_ColorPickerLog, "Picked Color (RGB) : %d, %d, %d\n", rgb.R, rgb.G, rgb.B);
 					}
 
 					if (bExportNormalizedColorPickerLog)
 					{
-						formattedTime = GetFormattedTime();
-						PrintLog(
-							&gpFile_NormalizedColorPickerLog, 
-							"[%02d-%02d-%d %02d:%02d:%02d %s] Normalized Picked Color (RGB) : %f, %f, %f\n", 
-							formattedTime.day, 
-							formattedTime.month, 
-							formattedTime.year, 
-							formattedTime.hour, 
-							formattedTime.minute, 
-							formattedTime.second, 
-							formattedTime.amPm,
-							rgb.R / 255.0f,
-							rgb.G / 255.0f,
-							rgb.B / 255.0f
-						);
+						PrintLogWithTime(&gpFile_UserLog, "User Exported Normalized Picked Color\n");
+						PrintLogWithTime(&gpFile_NormalizedColorPickerLog, "Normalized Picked Color (RGB) : %f, %f, %f\n", rgb.R / 255.0f, rgb.G / 255.0f, rgb.B / 255.0f);
 					}
 
 					bColorPick = FALSE;
@@ -675,8 +671,9 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						renderImage = ocvImage.clone();
 
 						if (IsDlgButtonChecked(hDlg, ID_RB_DESAT))
-						{
+						{		
 							//! Desaturation
+							PrintLogWithTime(&gpFile_UserLog, "User Applied Desaturation Effect\n");
 							for (int yRow = 0; yRow < renderImage.rows; yRow++)
 							{
 								cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
@@ -695,6 +692,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						else if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
 						{
 							//! Sepia
+							PrintLogWithTime(&gpFile_UserLog, "User Applied Sepia Effect\n");
 							for (int yRow = 0; yRow < renderImage.rows; yRow++)
 							{
 								cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
@@ -718,6 +716,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						else if (IsDlgButtonChecked(hDlg, ID_RB_INV))
 						{
 							//! Inversion
+							PrintLogWithTime(&gpFile_UserLog, "User Applied Inversion Effect\n");
 							for (int yRow = 0; yRow < renderImage.rows; yRow++)
 							{
 								cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
@@ -735,11 +734,13 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						}
 						else if (IsDlgButtonChecked(hDlg, ID_RB_PIX))
 						{
+							PrintLogWithTime(&gpFile_UserLog, "User Applied Pixelation Effect\n");
 							applyPixelate(&renderImage, 20);
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
 						else if (IsDlgButtonChecked(hDlg, ID_RB_GAUSBLUR))
 						{
+							PrintLogWithTime(&gpFile_UserLog, "User Blur Inversion Effect\n");
 							applyGaussianBlur(&renderImage, 21);
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
@@ -747,6 +748,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 				break;
 
 				case ID_RESET:
+					PrintLogWithTime(&gpFile_UserLog, "User Reset The Image\n");
 					renderImage = ocvImage.clone();
 					CheckDlgButton(hDlg, ID_RB_DESAT, BST_UNCHECKED);
 					CheckDlgButton(hDlg, ID_RB_SEPIA, BST_UNCHECKED);
@@ -761,7 +763,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						if (!CreateOpenLogFile(&gpFile_ColorPickerLog, "Color-Picker-Log.log", "a+"))
 						{
 							MessageBox(NULL, TEXT("Failed To Create Color Picker Log File ... Exiting Now !!!"), TEXT("PhotoMind Error"), MB_ICONERROR | MB_OK);
-							exit(EXIT_FAILURE);
+							DestroyWindow(GetParent(hDlg));
 						}	
 					}
 				break;
@@ -773,22 +775,25 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						if (!CreateOpenLogFile(&gpFile_NormalizedColorPickerLog, "Normalized-Color-Picker-Log.log", "a+"))
 						{
 							MessageBox(NULL, TEXT("Failed To Create Normalized Color Picker Log File ... Exiting Now !!!"), TEXT("PhotoMind Error"), MB_ICONERROR | MB_OK);
-							exit(EXIT_FAILURE);
+							DestroyWindow(GetParent(hDlg));
 						}
 					}
 				break;
 
 				case ID_CHK_PICK_CLP:
+					PrintLogWithTime(&gpFile_UserLog, "User Copied Picked Color To Clipboard\n");
 					if (IsDlgButtonChecked(hDlg, ID_CHK_PICK_CLP))
 						bCopyToClipboard = TRUE;
 				break;
 				
 				case ID_ABOUT:
+					PrintLogWithTime(&gpFile_UserLog, "User Opened About Dialog\n");
 					DialogBox(ghInstance, MAKEINTRESOURCE(ABOUT_DLG), hDlg, AboutDialogProc);
 				break;
 
 				case ID_OK:
 				case ID_EXIT:
+					PrintLogWithTime(&gpFile_UserLog, "User Closed The Edit Dialog\n");
 					CloseLogFile(&gpFile_NormalizedColorPickerLog);
 					CloseLogFile(&gpFile_ColorPickerLog);
 					if (hdc)
@@ -800,11 +805,17 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		return (INT_PTR)TRUE;
 
 		case WM_CLOSE:
+			PrintLogWithTime(&gpFile_UserLog, "User Closed The Edit Dialog\n");
 			CloseLogFile(&gpFile_NormalizedColorPickerLog);
 			CloseLogFile(&gpFile_ColorPickerLog);
 			if (hdc)
 				hdc = NULL;
 			hwndControlsDialog = NULL;
+			if (hBgBrush)
+			{
+				DeleteObject(hBgBrush);
+				hBgBrush = NULL;
+			}
 			DestroyWindow(hDlg);
 		return (INT_PTR)TRUE;
 
@@ -860,7 +871,7 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 {
 	//*Variable Declarations
 	HDC hdc = NULL;
-	static HBRUSH hBrush = NULL;
+	static HBRUSH hBgBrush = NULL;
 	int controlId;
 	static BOOL bInit = TRUE;
 
@@ -868,6 +879,7 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	switch(iMsg)
 	{
 		case WM_INITDIALOG:
+			hBgBrush = CreateSolidBrush(BLUE_BG);
 			EnableWindow(GetDlgItem(hDlg, ID_REGISTER_BTN), FALSE);
 		return (INT_PTR)TRUE;
 
@@ -919,7 +931,7 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 		return (INT_PTR)TRUE;
 
 		case WM_CTLCOLORDLG:
-			return (INT_PTR)CreateSolidBrush(BLUE_BG);
+			return (INT_PTR)hBgBrush;
 
 		case WM_CTLCOLORSTATIC:
 
@@ -947,11 +959,16 @@ INT_PTR CALLBACK RegisterDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 					SetTextColor(hdc, BLACK_COLOR);
 			}
 
-		return (INT_PTR)CreateSolidBrush(BLUE_BG);
+		return (INT_PTR)hBgBrush;
 
 		case WM_CLOSE:
 			if (hdc)
 				hdc = NULL;
+			if (hBgBrush)
+			{
+				DeleteObject(hBgBrush);
+				hBgBrush = NULL;
+			}
 			EndDialog(hDlg, (INT_PTR)0);
 		break;
 
@@ -970,11 +987,13 @@ INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LP
 	char promptText[1024] = "";
 	const char* outputPath;
 	DWORD threadId;
+	static HBRUSH hBgBrush = NULL;
 
 	// Code
 	switch(iMsg)
 	{
 		case WM_INITDIALOG:
+			hBgBrush = CreateSolidBrush(BLUE_BG);
 		return (INT_PTR)TRUE;
 
 		case WM_COMMAND:
@@ -1027,13 +1046,111 @@ INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LP
 		case WM_CTLCOLORSTATIC:
 			hdc = (HDC)wParam;
 			SetBkMode(hdc, TRANSPARENT);
-		return (INT_PTR)CreateSolidBrush(BLUE_BG);
+		return (INT_PTR)hBgBrush;
 
 		case WM_CLOSE:
 			if (hdc)
 				hdc = NULL;
 			EndDialog(hDlg, (INT_PTR)0);
 		break;
+
+		default:
+			return (INT_PTR)FALSE;
+	}
+
+	return (INT_PTR)FALSE;
+}
+
+INT_PTR CALLBACK ProgrssDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
+{
+	//*Variable Declarations
+	static HBITMAP hSpinnerBitmaps[4];
+	static int count = 0;
+	static HBRUSH hBgBrush = NULL;
+
+	// Code
+	switch(iMsg)
+	{
+		case WM_INITDIALOG:
+			
+			// Load Bitmaps
+			hSpinnerBitmaps[0] = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_SPIN_1));
+			hSpinnerBitmaps[1] = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_SPIN_2));
+			hSpinnerBitmaps[2] = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_SPIN_3));
+			hSpinnerBitmaps[3] = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_SPIN_4));
+
+			SetTimer(hDlg, 1, 80, NULL);
+
+			hBgBrush = CreateSolidBrush(BLUE_BG);
+
+		return (INT_PTR)TRUE;
+
+		case WM_TIMER:
+			count = (count + 1) % 4;
+			InvalidateRect(hDlg, NULL, TRUE);
+		return (INT_PTR)TRUE;
+
+		case WM_ERASEBKGND:
+		{
+			HDC hdc = (HDC)wParam;
+			RECT rc;
+
+			GetClientRect(hDlg, &rc);
+			FillRect(hdc, &rc, hBgBrush);
+			
+			return (INT_PTR)TRUE;
+		}
+
+		case WM_PAINT:
+		{
+			PAINTSTRUCT ps;
+			BITMAP bmp;
+			int width, height;
+			RECT rc;
+
+			HDC hdc = BeginPaint(hDlg, &ps);
+			HDC hMemDc = CreateCompatibleDC(hdc);
+			GetObject(hSpinnerBitmaps[count], sizeof(BITMAP), &bmp);
+			HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDc, hSpinnerBitmaps[count]);
+			
+			GetClientRect(hDlg, &rc);
+			width = rc.right;
+			height = rc.bottom;
+
+			int x = (width - bmp.bmWidth) / 2;
+			int y = 120;
+
+			BitBlt(hdc, x, y, bmp.bmWidth, bmp.bmHeight, hMemDc, 0, 0, SRCCOPY);
+
+			SelectObject(hMemDc, hOldBitmap);
+			DeleteDC(hMemDc);
+			EndPaint(hDlg, &ps);
+
+			return (INT_PTR)TRUE;
+		}
+
+		case WM_CTLCOLORDLG:
+		case WM_CTLCOLORSTATIC:
+		{
+			HDC hdc = (HDC)wParam;
+			SetBkMode(hdc, TRANSPARENT);
+
+			return (INT_PTR)hBgBrush;
+		}
+
+		case WM_DESTROY:
+			KillTimer(hDlg, 1);
+			for (int i = 0; i < 4; i++)
+			{
+				if (hSpinnerBitmaps[i])
+					DeleteObject(hSpinnerBitmaps[i]);
+			}
+			if (hBgBrush)
+			{
+				DeleteObject(hBgBrush);
+				hBgBrush = NULL;
+			}
+		return (INT_PTR)TRUE;
 
 		default:
 			return (INT_PTR)FALSE;
@@ -1052,7 +1169,7 @@ DWORD WINAPI ShowProgressDialog(LPVOID lpParam)
 		GetModuleHandle(NULL),
 		MAKEINTRESOURCE(ID_PROGRESS_DLG), 
 		(HWND)lpParam, 
-		NULL
+		ProgrssDialogProc
 	);
 
 	ShowWindow(hwndProgressDialog, SW_SHOW);
@@ -1079,10 +1196,9 @@ BOOL RegisterUser(void)
 	{
 		formattedTime = GetFormattedTime();
 
-		if (!CreateOpenLogFile(&gpFile_UserLog, "User-Log.log", "w"))
+		if (!CreateOpenLogFile(&gpFile_UserLog, "User-Log.log", "a+"))
 		{
 			MessageBox(NULL, TEXT("Failed To Create User Log File ... Exiting Now !!!"), TEXT("PhotoMind Error"), MB_ICONERROR | MB_OK);
-			exit(EXIT_FAILURE);
 		}
 
 		PrintLog(&gpFile_UserLog, "PhotoMind v1.0 User Registration Log\n");
@@ -1114,7 +1230,151 @@ BOOL RegisterUser(void)
 	return FALSE;
 }
 
-void DisplaySystemDetails(void)
+void DisplaySystemDetails(HDC hdc, int resizedWindowWidth)
 {
+	// Variable Declarations
+
+	// Content Placement Related
+	int logoSize = 100;
+	int spacing = 40;
+	int textWidth = 700;
+	int centerX = resizedWindowWidth / 2;
+	int yTop = 20;
+	
+	HFONT hFont;
+	HBITMAP hOldBitmap = NULL;
+	HBITMAP hLogos[] = { hCPUBitmap, hGPUBitmap };
+	BITMAP bmp = {};
+	std::wstringstream sysInfoStream;
+	RECT rcText;
+
 	// Code
+	HDC hdcMem = CreateCompatibleDC(hdc);
+	
+	// Display OS Logo
+	SetStretchBltMode(hdc, HALFTONE);
+	SetBrushOrgEx(hdc, 0, 0, NULL);
+	GetObject(hOSBitmap, sizeof(BITMAP), &bmp);
+	hOldBitmap = (HBITMAP)SelectObject(hdcMem, hOSBitmap);
+	StretchBlt(
+		hdc, 
+		centerX - logoSize / 2,
+		yTop, 
+		logoSize, 
+		logoSize, 
+		hdcMem, 
+		0, 
+		0, 
+		bmp.bmWidth, 
+		bmp.bmHeight, 
+		SRCCOPY
+	);
+
+	// System Info
+	sysInfoStream << L"OS    : " << sysInfo.osName << L" (v" << sysInfo.osVersion << L")\n";
+	sysInfoStream << L"CPU   : " << sysInfo.cpuName << L"\n";
+	sysInfoStream << L"Cores : " << sysInfo.cpuCores << L"\n";
+	sysInfoStream << L"Threads : " << sysInfo.cpuThreads << L"\n";
+	double ram = sysInfo.ram / (1024.0 * 1024 * 1024);
+	sysInfoStream << L"RAM   : " << (int)ceil(ram) << L" GB\n";
+	sysInfoStream << L"GPU   : " << sysInfo.gpuName << L"\n";
+	double vram = sysInfo.gpuVRAM / (1024.0 * 1024 * 1024);
+	sysInfoStream << L"VRAM  : " << (int)ceil(vram) << L" GB\n";
+	
+	rcText.left = (resizedWindowWidth - textWidth) / 2;
+	rcText.right = rcText.left + textWidth;
+	rcText.top = yTop + logoSize + 40;
+	rcText.bottom = 450;
+
+	CreateAppFont(&hFont, TEXT("Poppins"), 38);
+	HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+	SetBkColor(hdc, BLUE_BG);
+	SetTextColor(hdc, RGB(0, 0, 139));
+	DrawTextW(hdc, sysInfoStream.str().c_str(), -1, &rcText, DT_LEFT | DT_TOP | DT_WORDBREAK);
+	SelectObject(hdc, hOldFont);
+	DeleteObject(hFont);
+	
+	// Display CPU and GPU Logo
+	int width = logoSize * 2 + spacing;
+	int startX = centerX - width / 2;
+	int yBottom = rcText.bottom + 50;
+
+	for (int i = 0; i < 2; i++)
+	{
+		GetObject(hLogos[i], sizeof(BITMAP), &bmp);
+		hOldBitmap = (HBITMAP)SelectObject(hdcMem, hLogos[i]);
+		StretchBlt(
+			hdc, 
+			startX + i * (logoSize + spacing), 
+			yBottom, 
+			logoSize, 
+			logoSize, 
+			hdcMem, 
+			0, 
+			0, 
+			bmp.bmWidth, 
+			bmp.bmHeight, 
+			SRCCOPY
+		);
+		SelectObject(hdcMem, hOldBitmap);
+	}
+	if (hdcMem)
+	{
+		SelectObject(hdcMem, hOldBitmap);
+		DeleteDC(hdcMem);
+		hdcMem = NULL;
+	}
 }
+
+void DisplayStatusBar(HDC hdc, int windowWidth, int windowHeight, const char* imagePath)
+{
+	// Variable Declarations
+	HFONT hFont;
+	RECT rcInfo;
+	int statusBarHeight = 30;
+	std::wstringstream infoText;
+	std::wstring sizeUnit;
+
+	// Code
+	int statusBarY = windowHeight - statusBarHeight;
+	sizeUnit = L"KB";
+
+	HPEN hBorderPen = CreatePen(PS_SOLID, 1, RGB(120, 120, 120));
+	HPEN hOldPen = (HPEN)SelectObject(hdc, hBorderPen);
+
+	HBRUSH hBrush = CreateSolidBrush(RGB(240, 240, 240));
+	HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+
+	Rectangle(hdc, 0, statusBarY, windowWidth, windowHeight);
+
+	SelectObject(hdc, hOldBrush);
+	SelectObject(hdc, hOldPen);
+	DeleteObject(hBrush);
+	DeleteObject(hBorderPen);
+
+	infoText << L"Resolution : " << renderImage.cols << L" x " << renderImage.rows;
+	
+	uintmax_t imageSizeInBytes = std::filesystem::file_size(std::string(imagePath));
+	double imageSize = imageSizeInBytes / (1024.0);
+	if (imageSize >= 1024)
+	{
+		imageSize = imageSize / 1024.0;
+		sizeUnit = L"MB";
+	}
+
+	infoText << L" | Size : " << std::fixed << std::setprecision(2) << imageSize << L" " << sizeUnit;
+
+	rcInfo.left = 10;
+	rcInfo.top = statusBarY + 5;
+	rcInfo.right = windowWidth - 10;
+	rcInfo.bottom = windowHeight;
+
+	CreateAppFont(&hFont, TEXT("Poppins"), 24);
+	HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+	SetBkMode(hdc, TRANSPARENT);
+	SetTextColor(hdc, RGB(0, 0, 0));
+	DrawTextW(hdc, infoText.str().c_str(), -1, &rcInfo, DT_LEFT | DT_SINGLELINE | DT_CENTER);
+	SelectObject(hdc, hOldFont);
+	DeleteObject(hFont);
+}
+

@@ -1,15 +1,21 @@
 #include <windows.h>
 #include "../Include/ImageToolkit.h"
 
-PM_APP_ICON         ICON    "../Assets/Resources/Icons/Logo.ico"
-PM_SI_INTEL_CPU     BITMAP  "../Assets/Resources/Images/SysInfo/Intel-CPU.bmp"
-PM_SI_INTEL_ARC     BITMAP  "../Assets/Resources/Images/SysInfo/Intel-ARC.bmp"
-PM_SI_INTEL_UHD     BITMAP  "../Assets/Resources/Images/SysInfo/Intel-UHD.bmp"
-PM_SI_INTEL_IRIS    BITMAP  "../Assets/Resources/Images/SysInfo/Intel-Iris.bmp"
-PM_SI_NVIDIA        BITMAP  "../Assets/Resources/Images/SysInfo/Nvidia.bmp"
-PM_SI_AMD_CPU       BITMAP  "../Assets/Resources/Images/SysInfo/AMD-Ryzen.bmp"
-PM_SI_AMD_GPU       BITMAP  "../Assets/Resources/Images/SysInfo/AMD-Radeon.bmp"
-PM_SI_WINDOWS       BITMAP  "../Assets/Resources/Images/SysInfo/Windows.bmp"
+PM_APP_ICON         ICON        "../Assets/Resources/Icons/Logo.ico"
+
+PM_SI_INTEL_CPU     BITMAP      "../Assets/Resources/Images/SysInfo/Intel-CPU.bmp"
+PM_SI_INTEL_ARC     BITMAP      "../Assets/Resources/Images/SysInfo/Intel-ARC.bmp"
+PM_SI_INTEL_UHD     BITMAP      "../Assets/Resources/Images/SysInfo/Intel-UHD.bmp"
+PM_SI_INTEL_IRIS    BITMAP      "../Assets/Resources/Images/SysInfo/Intel-Iris.bmp"
+PM_SI_NVIDIA        BITMAP      "../Assets/Resources/Images/SysInfo/Nvidia.bmp"
+PM_SI_AMD_CPU       BITMAP      "../Assets/Resources/Images/SysInfo/AMD-Ryzen.bmp"
+PM_SI_AMD_GPU       BITMAP      "../Assets/Resources/Images/SysInfo/AMD-Radeon.bmp"
+PM_SI_WINDOWS       BITMAP      "../Assets/Resources/Images/SysInfo/Windows.bmp"
+
+ID_SPIN_1           BITMAP      "../Assets/Resources/Images/Spinner-1.bmp"
+ID_SPIN_2           BITMAP      "../Assets/Resources/Images/Spinner-2.bmp"
+ID_SPIN_3           BITMAP      "../Assets/Resources/Images/Spinner-3.bmp"
+ID_SPIN_4           BITMAP      "../Assets/Resources/Images/Spinner-4.bmp"
 
 PM_MENU MENU
 BEGIN
@@ -40,7 +46,7 @@ BEGIN
     END
 END
 
-PM_DLG DIALOGEX 390, 30, 400, 140
+PM_DLG DIALOGEX 450, 30, 400, 140
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | WS_VISIBLE
 CAPTION "Image Editor And Color Picker"
 FONT 11, "Poppins"
@@ -51,7 +57,7 @@ BEGIN
             AUTORADIOBUTTON "Sepia",                        ID_RB_SEPIA                     25, 60, 80, 10
             AUTORADIOBUTTON "Color Inversion",              ID_RB_INV                       25, 75, 80, 10
             AUTORADIOBUTTON "Pixelate",                     ID_RB_PIX                       25, 90, 80, 10
-            AUTORADIOBUTTON "Gaussian Blur",                ID_RB_GAUSBLUR                  25, 105, 80, 10
+            AUTORADIOBUTTON "Blur",                         ID_RB_GAUSBLUR                  25, 105, 80, 10
 
         DEFPUSHBUTTON "Apply Effect",                       ID_APPLY,                       127, 48, 50, 12
         DEFPUSHBUTTON "Reset Image",                        ID_RESET,                       127, 68, 50, 12
@@ -113,10 +119,10 @@ BEGIN
     DEFPUSHBUTTON   "Generate Image",                  ID_GEN_BTN,       110, 70, 80, 14
 END
 
-ID_PROGRESS_DLG DIALOGEX 0, 0, 200, 60
+ID_PROGRESS_DLG DIALOGEX 10, 0, 200, 60
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "AI Image Generation"
 FONT 11, "Poppins"
 BEGIN
-    LTEXT "Generating Image, Please Wait ...", -1, 20, 20, 160, 12, SS_CENTER
+    LTEXT "Generating Image, Please Wait ...", -1, 20, 10, 160, 12, SS_CENTER
 END

@@ -511,6 +511,38 @@ BOOL GetSystemDetails(SYSINFO *sysInfo)
     return TRUE;
 }
 
+CPU GetCPUInfo(std::wstring cpuName)
+{
+    // Code
+    std::wstring lowerCaseName = cpuName;
+    std::transform(lowerCaseName.begin(), lowerCaseName.end(), lowerCaseName.begin(), ::tolower);
+
+    if (lowerCaseName.find(L"intel") != std::wstring::npos)
+        return CPU::Intel;
+    else
+        return CPU::AMD;
+}
+
+GPU GetGPUInfo(std::wstring gpuName)
+{
+    // Code
+    std::wstring lowerCaseName = gpuName;
+    std::transform(lowerCaseName.begin(), lowerCaseName.end(), lowerCaseName.begin(), ::tolower);
+
+    if (lowerCaseName.find(L"uhd") != std::wstring::npos)
+        return GPU::UHD;
+    else if (lowerCaseName.find(L"iris") != std::wstring::npos)
+        return GPU::Iris;
+    else if (lowerCaseName.find(L"arc") != std::wstring::npos)
+        return GPU::ARC;
+    else if (lowerCaseName.find(L"nvidia") != std::wstring::npos)
+        return GPU::Nvidia;
+    else if (lowerCaseName.find(L"amd") != std::wstring::npos)
+        return GPU::Radeon;
+    
+    return GPU::Undefined;
+}
+
 void SafeInterfaceRelease(IDesaturation *pIDesaturation, ISepia *pISepia, IColorInversion *pIColorInversion)
 {
 	if (pIColorInversion)
@@ -604,18 +636,55 @@ BOOL CreateOpenLogFile(FILE **ppFile, const char *szFileName, const char *szMode
 void PrintLog(FILE **ppFile, const char *fmt, ...)
 {
     // Variable Declarations
-    va_list arg;
-    int ret;
+    va_list args;
 
     // Code
     if (*ppFile == NULL)
         return;
 
-    va_start(arg, fmt);
+    va_start(args, fmt);
     {
-        ret = vfprintf(*ppFile, fmt, arg);
+        vfprintf(*ppFile, fmt, args);
     }
-    va_end(arg);
+    va_end(args);
+}
+
+void PrintLogWithTime(FILE **ppFile, const char *fmt, ...)
+{
+    // Variable Declarations
+    char timePrefix[64];
+    char logMsg[1024];
+    char buffer[8192];
+    va_list args;
+
+    // Code
+    if (*ppFile == NULL)
+        return;
+    
+    FormattedTime formattedTime = GetFormattedTime();
+
+    snprintf(
+        timePrefix,
+        sizeof(timePrefix),
+        "[%02d-%02d-%04d %02d:%02d:%02d %s] ",
+        formattedTime.day,
+        formattedTime.month,
+        formattedTime.year,
+        formattedTime.hour,
+        formattedTime.minute,
+        formattedTime.second,
+        formattedTime.amPm
+    );
+
+    va_start(args, fmt);
+    {
+        vsnprintf(logMsg, sizeof(logMsg), fmt, args);
+    }
+    va_end(args);
+
+    snprintf(buffer, sizeof(buffer), "%s%s", timePrefix, logMsg);
+
+    PrintLog(ppFile, "%s", buffer);
 }
 
 void CloseLogFile(FILE **ppFile)
