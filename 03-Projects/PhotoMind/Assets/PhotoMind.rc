@@ -1,9 +1,17 @@
 #include <windows.h>
 #include "../Include/ImageToolkit.h"
 
-IE_APP_ICON         ICON    "../Assets/Resources/Logo.ico"
+PM_APP_ICON         ICON    "../Assets/Resources/Icons/Logo.ico"
+PM_SI_INTEL_CPU     BITMAP  "../Assets/Resources/Images/SysInfo/Intel-CPU.bmp"
+PM_SI_INTEL_ARC     BITMAP  "../Assets/Resources/Images/SysInfo/Intel-ARC.bmp"
+PM_SI_INTEL_UHD     BITMAP  "../Assets/Resources/Images/SysInfo/Intel-UHD.bmp"
+PM_SI_INTEL_IRIS    BITMAP  "../Assets/Resources/Images/SysInfo/Intel-Iris.bmp"
+PM_SI_NVIDIA        BITMAP  "../Assets/Resources/Images/SysInfo/Nvidia.bmp"
+PM_SI_AMD_CPU       BITMAP  "../Assets/Resources/Images/SysInfo/AMD-Ryzen.bmp"
+PM_SI_AMD_GPU       BITMAP  "../Assets/Resources/Images/SysInfo/AMD-Radeon.bmp"
+PM_SI_WINDOWS       BITMAP  "../Assets/Resources/Images/SysInfo/Windows.bmp"
 
-IE_MENU MENU
+PM_MENU MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -32,7 +40,7 @@ BEGIN
     END
 END
 
-IE_DLG DIALOGEX 390, 30, 400, 140
+PM_DLG DIALOGEX 390, 30, 400, 140
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSMENU | WS_VISIBLE
 CAPTION "Image Editor And Color Picker"
 FONT 11, "Poppins"
@@ -70,7 +78,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSM
 CAPTION "About PhotoMind"
 FONT 12, "Poppins"
 BEGIN
-    ICON IE_APP_ICON,                                                                          -1, 10, 10, 50, 50
+    ICON PM_APP_ICON,                                                                          -1, 10, 10, 50, 50
     CTEXT "PhotoMind",                                                                      -1, 35, 10, 100, 20
     CTEXT "By",                                                                             -1, 35, 18, 100, 20
     CTEXT "AstroMediComp",                                                                  -1, 35, 26, 100, 20

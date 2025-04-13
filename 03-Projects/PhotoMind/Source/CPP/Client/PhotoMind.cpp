@@ -7,7 +7,7 @@ HWND hwndProgressDialog = NULL;
 HINSTANCE ghInstance = NULL;
 HRESULT hr = S_OK;
 HMENU hMenu = NULL;
-HBITMAP hBitmap = NULL;
+HBITMAP hBitmap = NULL, hOSBitmap = NULL, hCPUBitmap = NULL, hGPUBitmap = NULL;
 HCURSOR hPickerCursor = NULL, hDefaultCursor = NULL;
 
 cv::Mat ocvImage, renderImage;
@@ -37,6 +37,7 @@ unsigned int giPixelX = 0, giPixelY = 0;
 
 USER user;
 RGB rgb;
+SYSINFO sysInfo;
 
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -48,10 +49,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	TCHAR szAppName[] = TEXT("MyWindow");
 
 	//* Code
-	if (GetSystemDetails())
-		MessageBox(NULL, TEXT("Yes"), TEXT("COINIT"), MB_OK);
-	else
-		MessageBox(NULL, TEXT("No"), TEXT("COINIT"), MB_OK);
+	GetSystemDetails(&sysInfo);
 
 	//! Start COM Engine
 	hr = CoInitialize(NULL);
@@ -70,11 +68,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wndclass.cbWndExtra = 0;
 	wndclass.lpfnWndProc = WndProc;
 	wndclass.lpszClassName = szAppName;
-	wndclass.lpszMenuName = MAKEINTRESOURCE(IE_MENU);
+	wndclass.lpszMenuName = MAKEINTRESOURCE(PM_MENU);
 	wndclass.hbrBackground = CreateSolidBrush(BLUE_BG);
 	wndclass.hInstance = hInstance;
-	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IE_APP_ICON));
-	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IE_APP_ICON));
+	wndclass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(PM_APP_ICON));
+	wndclass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(PM_APP_ICON));
 	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
 
 	//* Register the above created class
@@ -152,7 +150,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			//! Menu Settings
-			hMenu = LoadMenu(ghInstance, MAKEINTRESOURCE(IE_MENU));
+			hMenu = LoadMenu(ghInstance, MAKEINTRESOURCE(PM_MENU));
 			SetMenu(hwnd, hMenu);
 			EnableMenuItem(hMenu, IDM_EDIT, MF_BYCOMMAND | MF_DISABLED);
 			DrawMenuBar(hwnd);
@@ -224,6 +222,28 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				hwnd = NULL;
 			}
 
+			//! Load System Information Bitmaps
+			hCPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_INTEL_CPU));
+			if (hCPUBitmap == NULL)
+			{
+				MessageBox(hwnd, TEXT("Failed To Load CPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+				DestroyWindow(hwnd);
+			}
+
+			hGPUBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_NVIDIA));
+			if (hGPUBitmap == NULL)
+			{
+				MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+				DestroyWindow(hwnd);
+			}
+
+			hOSBitmap = LoadBitmap(((LPCREATESTRUCT)lParam)->hInstance, MAKEINTRESOURCE(PM_SI_WINDOWS));
+			if (hOSBitmap == NULL)
+			{
+				MessageBox(hwnd, TEXT("Failed To Load OS Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
+				DestroyWindow(hwnd);
+			}
+
 		break;
 
 		case WM_SIZE:
@@ -251,11 +271,68 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				}
 				else if (bShowSystemDetails)
 				{
-					CreateAppFont(&hFont, TEXT("Poppins"), 36);
+					int logoSize = 100;
+					int spacing = 30;
+					int totalWidth = (logoSize * 3) + (spacing * 2);
+					int startX = (resizedWindowWidth - totalWidth) / 2;
+					int y = 40;
+					HBITMAP hOldBitmap = NULL;
+					
+					std::wstringstream ss;
+					ss << L"OS    : " << sysInfo.osName << L" (v" << sysInfo.osVersion << L")\n";
+					ss << L"CPU   : " << sysInfo.cpuName << L"\n";
+					ss << L"Cores : " << sysInfo.cpuCores << L"\n";
+					ss << L"Threads : " << sysInfo.cpuThreads << L"\n";
+					double ram = sysInfo.ram / (1024.0 * 1024 * 1024);
+					ss << L"RAM   : " << (int)ceil(ram) << L" GB\n";
+					ss << L"GPU   : " << sysInfo.gpuName << L"\n";
+					double vram = sysInfo.gpuVRAM / (1024.0 * 1024 * 1024);
+					ss << L"VRAM  : " << (int)ceil(vram) << L" GB\n";
+					
+					hdcMem = CreateCompatibleDC(hdc);
+					BITMAP bmp = {};
+					HBITMAP hLogos[] = { hCPUBitmap, hGPUBitmap, hOSBitmap };
+					SetStretchBltMode(hdc, HALFTONE);
+					SetBrushOrgEx(hdc, 0, 0, NULL);
+					for (int i = 0; i < 3; i++)
+					{
+						GetObject(hLogos[i], sizeof(BITMAP), &bmp);
+						hOldBitmap = (HBITMAP)SelectObject(hdcMem, hLogos[i]);
+						
+						StretchBlt(
+							hdc, 
+							startX + i * (logoSize + spacing), 
+							y, 
+							logoSize, 
+							logoSize, 
+							hdcMem, 
+							0, 
+							0, 
+							bmp.bmWidth, 
+							bmp.bmHeight, 
+							SRCCOPY
+						);
+						SelectObject(hdcMem, hOldBitmap);
+					}
+					if (hdcMem)
+					{
+						SelectObject(hdcMem, hOldBitmap);
+						DeleteDC(hdcMem);
+						hdcMem = NULL;
+					}
+
+					RECT rcText;
+					int textWidth = 600;
+					rcText.left = (resizedWindowWidth - textWidth) / 2;
+					rcText.right = rcText.left + textWidth;
+					rcText.top = y + logoSize + 40;
+					rcText.bottom = 600;
+
+					CreateAppFont(&hFont, TEXT("Poppins"), 32);
 					HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 					SetBkColor(hdc, BLUE_BG);
-					SetTextColor(hdc, RGB(44, 156, 242));
-					DrawText(hdc, TEXT("Intel Core i7"), -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+					SetTextColor(hdc, RGB(0, 0, 139));
+					DrawTextW(hdc, ss.str().c_str(), -1, &rcText, DT_LEFT | DT_TOP | DT_WORDBREAK);
 					SelectObject(hdc, hOldFont);
 					DeleteObject(hFont);
 				}
@@ -366,6 +443,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			{
 				case IDM_OPEN:
 					
+					bShowSystemDetails = FALSE;
 					OPENFILENAME ofn = OpenFileDialog(hwnd);
 					if (GetOpenFileName((LPOPENFILENAME)&ofn))
 					{
@@ -386,6 +464,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 								
 								renderImage = ocvImage.clone();
 								bImageLoaded = TRUE;
+								// SetCursor(hPickerCursor);
 								EnableMenuItem(hMenu, IDM_EDIT, MF_BYCOMMAND | MF_ENABLED);
 								DrawMenuBar(hwnd);
 								InvalidateRect(hwnd, NULL, TRUE);
@@ -401,7 +480,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				break;
 
 				case IDM_EDIT:
-					hwndControlsDialog = CreateDialog(ghInstance, MAKEINTRESOURCE(IE_DLG), hwnd, ControlsDialogProc);
+					hwndControlsDialog = CreateDialog(ghInstance, MAKEINTRESOURCE(PM_DLG), hwnd, ControlsDialogProc);
 				break;
 
 				case IDM_GENERATE:
@@ -420,6 +499,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		break;
 
 		case WM_DESTROY:
+
+			DeleteImageObject(&hOSBitmap);
+			DeleteImageObject(&hGPUBitmap);
+			DeleteImageObject(&hCPUBitmap);
 
 			// SafeInterfaceRelease(pIDesaturation, pISepia, pIColorInversion);
 			if (pIColorInversion)
@@ -1029,4 +1112,9 @@ BOOL RegisterUser(void)
 	}
 
 	return FALSE;
+}
+
+void DisplaySystemDetails(void)
+{
+	// Code
 }

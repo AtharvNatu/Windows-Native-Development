@@ -48,20 +48,22 @@ typedef struct tagRGBColor
 
 typedef struct tagSystemDetails
 {
-    std::string cpuName;
+    std::wstring osName;
+    std::wstring osVersion;
+    std::wstring cpuName;
     int cpuCores;
     int cpuThreads;
     size_t ram;
-    std::string gpuName;
+    std::wstring gpuName;
     size_t gpuVRAM;
-} SysInfo;
+} SYSINFO;
 
 //* COM Related
 //*--------------------------------------------------------------------------------------------
 BOOL RegisterServerLibararies(void);
 HRESULT GetLibraryInterfaces(IDesaturation*, ISepia*, IColorInversion*, int*);
 const char* GenerateImageUsingSD(const char*, const char*);
-BOOL GetSystemDetails();
+BOOL GetSystemDetails(SYSINFO*);
 void SafeInterfaceRelease(IDesaturation*, ISepia*, IColorInversion*);
 //*--------------------------------------------------------------------------------------------
 
@@ -87,10 +89,13 @@ void CopyToClipboard(HWND, RGB);
 
 //* Image Related
 //*--------------------------------------------------------------------------------------------
-bool LoadOCVImage(std::string, cv::Mat*);
-bool SaveOCVImage(std::string, cv::Mat*);
-bool UseGPU(std::string, cv::Mat*);
-bool ConvertOCVImageToBGR(cv::Mat*);
+BOOL LoadImageFromExplorer(HBITMAP*, HBITMAP*, TCHAR*);
+void DeleteImageObject(HBITMAP*);
+
+BOOL LoadOCVImage(std::string, cv::Mat*);
+BOOL SaveOCVImage(std::string, cv::Mat*);
+BOOL UseGPU(std::string, cv::Mat*);
+BOOL ConvertOCVImageToBGR(cv::Mat*);
 
 
 void applySepia(RGBColor input, RGBColor *output);

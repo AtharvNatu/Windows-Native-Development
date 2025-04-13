@@ -248,14 +248,14 @@ const char* GenerateImageUsingSD(const char* promptText, const char* outputPath)
     return result;
 }
 
-BOOL GetSystemDetails(void)
+BOOL GetSystemDetails(SYSINFO *sysInfo)
 {
     // Variable Declarations
     IWbemLocator* pIWbemLocator = NULL;
     IWbemServices* pIWbemServices = NULL;
     IWbemClassObject* pIWbemClassObject = NULL;
     IEnumWbemClassObject *pIEnumWbemClassObject = NULL;
-    VARIANT vtProperties;
+    VARIANT vtProp;
     ULONG uRet = 0;
     HRESULT hr = S_OK;
 
@@ -332,10 +332,10 @@ BOOL GetSystemDetails(void)
         return FALSE;
     }
 
-    // CPU Info Query
+    //* Query OS Info
     hr = pIWbemServices->ExecQuery(
-        bstr_t("WOL"),
-        bstr_t("SELECT * FROM Win32_Processor"),
+        bstr_t("WQL"),
+        bstr_t("SELECT Caption, Version FROM Win32_OperatingSystem"),
         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
         NULL,
         &pIEnumWbemClassObject
@@ -350,21 +350,161 @@ BOOL GetSystemDetails(void)
         return FALSE;
     }
 
-    // while (pIEnumWbemClassObject)
-    // {
-    //     HRESULT hrNext = pIEnumWbemClassObject->Next(
-    //         WBEM_INFINITE,
-    //         1,
-    //         &pIWbemClassObject,
-    //         &uRet
-    //     );
+    if (pIEnumWbemClassObject->Next(
+        WBEM_INFINITE,
+        1,
+        &pIWbemClassObject,
+        &uRet) == S_OK)
+    {
+        VariantInit(&vtProp);
+        {
+            pIWbemClassObject->Get(L"Caption", 0, &vtProp, NULL, NULL);
+            sysInfo->osName = vtProp.bstrVal;
+            VariantClear(&vtProp);
 
-    //     VariantInit(&vtProperties);
-    //     {
-    //         hrNext = pIWbemClassObject->Get(attr)
-    //     }
-    //     VariantClear(&vtProperties);
-    // }
+            pIWbemClassObject->Get(L"Version", 0, &vtProp, NULL, NULL);
+            sysInfo->osVersion = vtProp.bstrVal;
+            VariantClear(&vtProp);
+        }
+        VariantClear(&vtProp);
+
+        pIWbemClassObject->Release();
+        pIWbemClassObject = NULL;
+    }
+
+    pIEnumWbemClassObject->Release();
+    pIEnumWbemClassObject = NULL;
+
+    //* Query CPU
+    hr = pIWbemServices->ExecQuery(
+        bstr_t("WQL"),
+        bstr_t("SELECT Name, NumberOfCores, NumberOfLogicalProcessors FROM Win32_Processor"),
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        NULL,
+        &pIEnumWbemClassObject
+    );
+    if (FAILED(hr))
+    {
+        pIWbemServices->Release();
+        pIWbemServices = NULL;
+        pIWbemLocator->Release();
+        pIWbemLocator = NULL;
+        CoUninitialize();
+        return FALSE;
+    }
+
+    if (pIEnumWbemClassObject->Next(
+        WBEM_INFINITE,
+        1,
+        &pIWbemClassObject,
+        &uRet) == S_OK)
+    {
+        VariantInit(&vtProp);
+        {
+            pIWbemClassObject->Get(L"Name", 0, &vtProp, NULL, NULL);
+            sysInfo->cpuName = vtProp.bstrVal;
+            VariantClear(&vtProp);
+
+            pIWbemClassObject->Get(L"NumberOfCores", 0, &vtProp, NULL, NULL);
+            sysInfo->cpuCores = vtProp.intVal;
+            VariantClear(&vtProp);
+
+            pIWbemClassObject->Get(L"NumberOfLogicalProcessors", 0, &vtProp, NULL, NULL);
+            sysInfo->cpuThreads = vtProp.intVal;
+        }
+        VariantClear(&vtProp);
+
+        pIWbemClassObject->Release();
+        pIWbemClassObject = NULL;
+    }
+
+    //* Query RAM
+    hr = pIWbemServices->ExecQuery(
+        bstr_t("WQL"),
+        bstr_t("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem"),
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        NULL,
+        &pIEnumWbemClassObject
+    );
+    if (FAILED(hr))
+    {
+        pIWbemServices->Release();
+        pIWbemServices = NULL;
+        pIWbemLocator->Release();
+        pIWbemLocator = NULL;
+        CoUninitialize();
+        return FALSE;
+    }
+
+    if (pIEnumWbemClassObject->Next(
+        WBEM_INFINITE,
+        1,
+        &pIWbemClassObject,
+        &uRet) == S_OK)
+    {
+        VariantInit(&vtProp);
+        {
+            pIWbemClassObject->Get(L"TotalPhysicalMemory", 0, &vtProp, NULL, NULL);
+            sysInfo->ram = _wtoi64(vtProp.bstrVal);
+        }
+        VariantClear(&vtProp);
+
+        pIWbemClassObject->Release();
+        pIWbemClassObject = NULL;
+    }
+
+    pIEnumWbemClassObject->Release();
+    pIEnumWbemClassObject = NULL;
+
+    //* Query GPU
+    hr = pIWbemServices->ExecQuery(
+        bstr_t("WQL"),
+        bstr_t("SELECT Name, AdapterRAM FROM Win32_VideoController"),
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        NULL,
+        &pIEnumWbemClassObject
+    );
+    if (FAILED(hr))
+    {
+        pIWbemServices->Release();
+        pIWbemServices = NULL;
+        pIWbemLocator->Release();
+        pIWbemLocator = NULL;
+        CoUninitialize();
+        return FALSE;
+    }
+
+    if (pIEnumWbemClassObject->Next(
+        WBEM_INFINITE,
+        1,
+        &pIWbemClassObject,
+        &uRet) == S_OK)
+    {
+        VariantInit(&vtProp);
+        {
+            pIWbemClassObject->Get(L"Name", 0, &vtProp, NULL, NULL);
+            sysInfo->gpuName = vtProp.bstrVal;
+            VariantClear(&vtProp);
+
+            pIWbemClassObject->Get(L"AdapterRAM", 0, &vtProp, NULL, NULL);
+            sysInfo->gpuVRAM = vtProp.ullVal;
+        }
+        VariantClear(&vtProp);
+
+        pIWbemClassObject->Release();
+        pIWbemClassObject = NULL;
+    }
+
+    pIEnumWbemClassObject->Release();
+    pIEnumWbemClassObject = NULL;
+
+    //* Load Bitmaps
+
+
+    pIWbemServices->Release();
+    pIWbemServices = NULL;
+    pIWbemLocator->Release();
+    pIWbemLocator = NULL;
 
     CoUninitialize();
 
@@ -399,7 +539,7 @@ void SafeInterfaceRelease(IDesaturation *pIDesaturation, ISepia *pISepia, IColor
 BOOL LoadAppCursors(HCURSOR *hPickerCursor, HCURSOR *hDefaultCursor)
 {
     // Variable Declarations
-    TCHAR cursorPath[] = TEXT("Assets/Resources/ColorPicker.cur");
+    TCHAR cursorPath[] = TEXT("Assets/Resources/Cursors/ColorPicker.cur");
 
     // Code
     *hPickerCursor = LoadCursorFromFile(cursorPath);
@@ -752,25 +892,48 @@ void DebugMsg(TCHAR* szMsg)
 
 //* Image Related
 //*--------------------------------------------------------------------------------------------
-bool LoadOCVImage(std::string imagePath, cv::Mat* image)
+BOOL LoadImageFromExplorer(HBITMAP *hBitmap, HBITMAP *hOriginalBitmap, TCHAR *szImagePath)
+{
+    // Code
+    *hBitmap = (HBITMAP)LoadImage(NULL, szImagePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    if (*hBitmap == NULL)
+        return FALSE;
+
+    *hOriginalBitmap = (HBITMAP)CopyImage(*hBitmap, IMAGE_BITMAP, 0, 0, LR_COPYRETURNORG);
+    if (*hOriginalBitmap == NULL)
+        return FALSE;
+
+    return TRUE;
+}
+
+void DeleteImageObject(HBITMAP *hBitmap)
+{
+    // Code
+    if (*hBitmap)
+    {
+        DeleteObject(*hBitmap);
+        *hBitmap = NULL;
+    }
+}
+
+BOOL LoadOCVImage(std::string imagePath, cv::Mat* image)
 {
     // Code
     *image = cv::imread(cv::String(imagePath), cv::IMREAD_UNCHANGED);
     if (!image->data)
-        return false;
-    return true;
+        return FALSE;
+    return TRUE;
 }
 
-
-bool SaveOCVImage(std::string imagePath, cv::Mat* image)
+BOOL SaveOCVImage(std::string imagePath, cv::Mat* image)
 {
     // Code
     if (!cv::imwrite(cv::String(imagePath), *image))
-        return false;
-    return true;
+        return FALSE;
+    return TRUE;
 }
 
-bool UseGPU(std::string imagePath, cv::Mat* image)
+BOOL UseGPU(std::string imagePath, cv::Mat* image)
 {
     // Code
     constexpr size_t imageSizeThreshold = 10000000; // 10 MB
@@ -779,12 +942,12 @@ bool UseGPU(std::string imagePath, cv::Mat* image)
     std::uintmax_t imageSize = std::filesystem::file_size(imagePath);
     int imageWidth = image->size().width;
     if (imageSize > imageSizeThreshold || imageWidth >= imageWidthThreshold)
-        return true;
+        return TRUE;
     
-    return false;
+    return FALSE;
 }
 
-bool ConvertOCVImageToBGR(cv::Mat* image)
+BOOL ConvertOCVImageToBGR(cv::Mat* image)
 {
     // Code
     cv::Mat temp;
@@ -806,12 +969,12 @@ bool ConvertOCVImageToBGR(cv::Mat* image)
         break;
 
         default:
-            return false;
+            return FALSE;
     }
 
     *image = temp;
 
-    return true;
+    return TRUE;
 }
 
 

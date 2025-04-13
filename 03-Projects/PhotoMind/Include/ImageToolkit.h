@@ -7,14 +7,21 @@
 #include <string.h>
 
 //! App Mode
-#define DEBUG                               1
+#define DEBUG                               0
 
 //! Icon
-#define IE_APP_ICON                         101
-#define ADN_PICKER_CURSOR                   102
+#define PM_APP_ICON                         101
+#define PM_SI_INTEL_CPU                     102
+#define PM_SI_INTEL_ARC                     103
+#define PM_SI_INTEL_UHD                     104
+#define PM_SI_INTEL_IRIS                    105
+#define PM_SI_NVIDIA                        106
+#define PM_SI_AMD_CPU                       107
+#define PM_SI_AMD_GPU                       108
+#define PM_SI_WINDOWS                       109
 
 //! Menu
-#define IE_MENU                             201
+#define PM_MENU                             201
 #define IDM_OPEN                            202
 #define IDM_EXIT                            203
 #define IDM_EDIT                            204
@@ -23,7 +30,7 @@
 #define IDM_SYSTEM                          207
 
 //! Dialogs
-#define IE_DLG                              301
+#define PM_DLG                              301
 #define ID_OK                               302
 #define ID_ABOUT                            303
 #define ID_EXIT                             304
@@ -86,4 +93,5 @@ DWORD WINAPI ShowProgressDialog(LPVOID);
 
 //* Function Declarations
 BOOL RegisterUser(void);
+void DisplaySystemDetails(void);
 
