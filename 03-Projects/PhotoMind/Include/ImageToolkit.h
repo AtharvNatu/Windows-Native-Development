@@ -22,6 +22,7 @@
 #define PM_SI_AMD_CPU                       107
 #define PM_SI_AMD_GPU                       108
 #define PM_SI_WINDOWS                       109
+#define PM_SI_CUDA                          110
 
 //! Menu
 #define PM_MENU                             201
@@ -71,11 +72,15 @@
 #define ID_PROMPT_TXT                       602
 #define ID_GEN_BTN                          603
 
-#define ID_PROGRESS_DLG                     701
+#define PROGRESS_DLG                        701
 #define ID_SPIN_1                           702
 #define ID_SPIN_2                           703
 #define ID_SPIN_3                           704
 #define ID_SPIN_4                           705
+
+#define RESULT_DLG                          801
+#define ID_STATUS_TEXT                      802
+#define ID_DEVICE_BITMAP                    803
 
 #define WINDOW_WIDTH 	                    1024
 #define WINDOW_HEIGHT	                    768
@@ -94,7 +99,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK AboutDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK RegisterDialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK GenerateImageDialogProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK ProgrssDialogProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK ProgressDialogProc(HWND, UINT, WPARAM, LPARAM);
 
 //* Thread Function Declarations
 DWORD WINAPI ShowProgressDialog(LPVOID);

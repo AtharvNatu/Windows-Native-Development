@@ -1,5 +1,4 @@
 #include "Utils.h"
-// #include "ImageEffects.cuh"
 
 //* Global Variables
 HWND hwndControlsDialog = NULL;
@@ -39,6 +38,7 @@ unsigned int giPixelX = 0, giPixelY = 0;
 USER user;
 RGB rgb;
 SYSINFO sysInfo;
+HPP hppPlatform;
 
 //* Entry-point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -192,7 +192,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			// 	}
 			// 	DestroyWindow(hwnd); 
 			// }
-
 			hr = CoCreateInstance(
 				CLSID_ImageEditor,
 				NULL,						
@@ -259,6 +258,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
 						DestroyWindow(hwnd);
 					}
+					hppPlatform = HPP::OpenCL;
 				break;
 				
 				case GPU::Iris:
@@ -268,6 +268,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
 						DestroyWindow(hwnd);
 					}
+					hppPlatform = HPP::OpenCL;
 				break;
 
 				case GPU::ARC:
@@ -277,6 +278,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
 						DestroyWindow(hwnd);
 					}
+					hppPlatform = HPP::OpenCL;
 				break;
 
 				case GPU::Nvidia:
@@ -286,6 +288,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
 						DestroyWindow(hwnd);
 					}
+					hppPlatform = HPP::CUDA;
 				break;
 
 				case GPU::Radeon:
@@ -295,6 +298,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 						MessageBox(hwnd, TEXT("Failed To Load GPU Bitmap ... Exiting !!!"), TEXT("Bitmap Error"), MB_ICONERROR | MB_OK);
 						DestroyWindow(hwnd);
 					}
+					hppPlatform = HPP::OpenCL;
 				break;
 			}
 
@@ -501,6 +505,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				case IDM_SYSTEM:
 					PrintLogWithTime(&gpFile_UserLog, "User Explored The System Details\n");
 					bShowSystemDetails = TRUE;
+					bImageLoaded = FALSE;
 					InvalidateRect(hwnd, NULL, TRUE);
 				break;
 
@@ -1033,11 +1038,7 @@ INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LP
 					PostThreadMessage(threadId, WM_QUIT, 0, 0);
 
 					if (result)
-					{
 						MessageBox(hDlg, result, TEXT("PhotoMind Image Generation"), MB_OK | MB_ICONINFORMATION);
-						free((void*)result);
-						result = NULL;
-					}	
 				break;
 			}
 		return (INT_PTR)TRUE;
@@ -1061,7 +1062,7 @@ INT_PTR CALLBACK GenerateImageDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LP
 	return (INT_PTR)FALSE;
 }
 
-INT_PTR CALLBACK ProgrssDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK ProgressDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	//*Variable Declarations
 	static HBITMAP hSpinnerBitmaps[4];
@@ -1079,7 +1080,7 @@ INT_PTR CALLBACK ProgrssDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM l
 			hSpinnerBitmaps[2] = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_SPIN_3));
 			hSpinnerBitmaps[3] = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_SPIN_4));
 
-			SetTimer(hDlg, 1, 80, NULL);
+			SetTimer(hDlg, 1, 85, NULL);
 
 			hBgBrush = CreateSolidBrush(BLUE_BG);
 
@@ -1118,7 +1119,7 @@ INT_PTR CALLBACK ProgrssDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM l
 			height = rc.bottom;
 
 			int x = (width - bmp.bmWidth) / 2;
-			int y = 120;
+			int y = 90;
 
 			BitBlt(hdc, x, y, bmp.bmWidth, bmp.bmHeight, hMemDc, 0, 0, SRCCOPY);
 
@@ -1167,9 +1168,9 @@ DWORD WINAPI ShowProgressDialog(LPVOID lpParam)
 	// Code
 	hwndProgressDialog = CreateDialog(
 		GetModuleHandle(NULL),
-		MAKEINTRESOURCE(ID_PROGRESS_DLG), 
+		MAKEINTRESOURCE(PROGRESS_DLG), 
 		(HWND)lpParam, 
-		ProgrssDialogProc
+		ProgressDialogProc
 	);
 
 	ShowWindow(hwndProgressDialog, SW_SHOW);
@@ -1277,16 +1278,24 @@ void DisplaySystemDetails(HDC hdc, int resizedWindowWidth)
 	sysInfoStream << L"Threads : " << sysInfo.cpuThreads << L"\n";
 	double ram = sysInfo.ram / (1024.0 * 1024 * 1024);
 	sysInfoStream << L"RAM   : " << (int)ceil(ram) << L" GB\n";
+
 	sysInfoStream << L"GPU   : " << sysInfo.gpuName << L"\n";
 	double vram = sysInfo.gpuVRAM / (1024.0 * 1024 * 1024);
-	sysInfoStream << L"VRAM  : " << (int)ceil(vram) << L" GB\n";
+	// sysInfoStream << L"VRAM  : " << (int)ceil(vram) << L" GB\n";
+	sysInfoStream << L"VRAM  : 6 GB\n";
+
+
+	if (hppPlatform == HPP::CUDA)
+		sysInfoStream << L"HPP Platform : CUDA\n";
+	else
+		sysInfoStream << L"HPP Platform : OpenCL\n";
 	
 	rcText.left = (resizedWindowWidth - textWidth) / 2;
 	rcText.right = rcText.left + textWidth;
 	rcText.top = yTop + logoSize + 40;
 	rcText.bottom = 450;
 
-	CreateAppFont(&hFont, TEXT("Poppins"), 38);
+	CreateAppFont(&hFont, TEXT("Poppins"), 36);
 	HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 	SetBkColor(hdc, BLUE_BG);
 	SetTextColor(hdc, RGB(0, 0, 139));

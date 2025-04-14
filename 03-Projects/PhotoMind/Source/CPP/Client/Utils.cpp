@@ -131,7 +131,7 @@ const char* GenerateImageUsingSD(const char* promptText, const char* outputPath)
     DISPPARAMS param;
     BSTR olePrompt = NULL, oleOutputPath = NULL;
     HRESULT hr = S_OK;
-    const char* result = NULL;
+    static char buffer[1024];
 
     // Code
 
@@ -213,12 +213,14 @@ const char* GenerateImageUsingSD(const char* promptText, const char* outputPath)
             {
                 if (vRetval.vt == VT_BSTR)
                 {
-                    int len = WideCharToMultiByte(CP_ACP, 0, vRetval.bstrVal, -1, NULL, 0, NULL, NULL);
-                    char* ansiResult = (char*)malloc(len);
-                    WideCharToMultiByte(CP_ACP, 0, vRetval.bstrVal, -1, ansiResult, len, NULL, NULL);
-                    result = ansiResult;
+                    int length = WideCharToMultiByte(CP_ACP, 0, vRetval.bstrVal, -1, NULL, 0, NULL, NULL);
+                    if (length > 0)
+                        WideCharToMultiByte(CP_ACP, 0, vRetval.bstrVal, -1, buffer, sizeof(buffer), NULL, NULL);
+                    else
+                        snprintf(buffer, sizeof(buffer), "Error Occurred While Generating Image !!!");
                 }
-                    
+                else
+                    snprintf(buffer, sizeof(buffer), "Error Occurred While Generating Image !!!");    
             }
         }
         VariantClear(&vRetval);
@@ -245,7 +247,7 @@ const char* GenerateImageUsingSD(const char* promptText, const char* outputPath)
 		pIDispatch = NULL;
 	}
 
-    return result;
+    return buffer;
 }
 
 BOOL GetSystemDetails(SYSINFO *sysInfo)
@@ -498,9 +500,6 @@ BOOL GetSystemDetails(SYSINFO *sysInfo)
     pIEnumWbemClassObject->Release();
     pIEnumWbemClassObject = NULL;
 
-    //* Load Bitmaps
-
-
     pIWbemServices->Release();
     pIWbemServices = NULL;
     pIWbemLocator->Release();
@@ -539,7 +538,7 @@ GPU GetGPUInfo(std::wstring gpuName)
         return GPU::Nvidia;
     else if (lowerCaseName.find(L"amd") != std::wstring::npos)
         return GPU::Radeon;
-    
+   
     return GPU::Undefined;
 }
 
@@ -571,7 +570,7 @@ void SafeInterfaceRelease(IDesaturation *pIDesaturation, ISepia *pISepia, IColor
 BOOL LoadAppCursors(HCURSOR *hPickerCursor, HCURSOR *hDefaultCursor)
 {
     // Variable Declarations
-    TCHAR cursorPath[] = TEXT("Assets/Resources/Cursors/ColorPicker.cur");
+    TCHAR cursorPath[] = TEXT("Assets/Resources/Cursors/Color-Picker-Red.cur");
 
     // Code
     *hPickerCursor = LoadCursorFromFile(cursorPath);

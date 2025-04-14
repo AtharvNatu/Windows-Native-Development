@@ -31,7 +31,8 @@ echo Creating Executable...
 echo ----------------------------------------------------------------------------------------------------------------
     link.exe *.obj *.res ^
     /LIBPATH:"C:\opencv\build\x64\vc16\lib" ^
-    user32.lib gdi32.lib comdlg32.lib ole32.lib oleaut32.lib Wbemuuid.lib Shlwapi.lib Advapi32.lib opencv_world4110.lib opencv_world4110d.lib  ^
+    user32.lib gdi32.lib comdlg32.lib ole32.lib oleaut32.lib ^
+    Wbemuuid.lib Shlwapi.lib Advapi32.lib opencv_world4110.lib opencv_world4110d.lib  ^
     /SUBSYSTEM:WINDOWS /OUT:PhotoMind.exe
 
 @echo:

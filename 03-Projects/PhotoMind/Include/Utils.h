@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <filesystem>
 
-
 // OpenCV Headers
 #include <opencv2/opencv.hpp>
 
@@ -73,6 +72,12 @@ enum GPU
     Nvidia,
     Radeon,
     Undefined
+};
+
+enum HPP
+{
+    CUDA,
+    OpenCL
 };
 
 //* COM Related

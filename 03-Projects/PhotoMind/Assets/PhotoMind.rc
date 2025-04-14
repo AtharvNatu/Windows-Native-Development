@@ -114,15 +114,15 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_POPUP | WS_SYSM
 CAPTION "AI Image Generation"
 FONT 11, "Poppins"
 BEGIN
-    LTEXT           "Enter Prompt to Generate Image",    -1,             20, 10, 260, 20, SS_CENTER | SS_WORDELLIPSIS
-    EDITTEXT                                           ID_PROMPT_TXT,    20, 25, 260, 35, ES_MULTILINE | WS_VSCROLL | ES_AUTOVSCROLL | ES_WANTRETURN
-    DEFPUSHBUTTON   "Generate Image",                  ID_GEN_BTN,       110, 70, 80, 14
+    LTEXT           "Enter Prompt to Generate Image",                                       -1, 20, 10, 260, 20, SS_CENTER | SS_WORDELLIPSIS
+    EDITTEXT                                                ID_PROMPT_TXT,                      20, 25, 260, 35, ES_MULTILINE | WS_VSCROLL | ES_AUTOVSCROLL | ES_WANTRETURN
+    DEFPUSHBUTTON   "Generate Image",                       ID_GEN_BTN,                         110, 70, 80, 14
 END
 
-ID_PROGRESS_DLG DIALOGEX 10, 0, 200, 60
+PROGRESS_DLG DIALOGEX 10, 0, 200, 60
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "AI Image Generation"
-FONT 11, "Poppins"
+FONT 12, "Poppins"
 BEGIN
-    LTEXT "Generating Image, Please Wait ...", -1, 20, 10, 160, 12, SS_CENTER
+    LTEXT "Generating Image, Please Wait ...",                                             -1, 20, 10, 160, 12, SS_CENTER
 END
