@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include "ImageEffects.cuh"
 
 //* Global Variables
 HWND hwndControlsDialog = NULL;
@@ -673,7 +674,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 
 					if (bImageLoaded)
 					{
-						renderImage = ocvImage.clone();
+						// renderImage = ocvImage.clone();
 
 						if (IsDlgButtonChecked(hDlg, ID_RB_DESAT))
 						{		
@@ -692,7 +693,16 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 							// 		row[xColumn] = cv::Vec3b(b, g, r);
 							// 	}
 							// }
-							applyDesaturation(renderImage);
+							if (bUseGPU) 
+							{
+								int status = applyDesatCUDA(renderImage);
+								if (status != 0)
+								{
+									PrintLogWithTime(&gpFile_AppLog, "CUDA Desaturation Failed : Return Code = %d\n", status);
+								}
+							}
+							else
+								applyDesaturation(renderImage);
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
 						else if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
