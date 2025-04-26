@@ -1067,30 +1067,64 @@ std::vector<BYTE> GetRawPixelData(cv::Mat* image)
     return imageVector;
 }
 
-void applySepia(RGBColor input, RGBColor *output)
-{
-	float tr = 0.393f * input.r + 0.769f * input.g + 0.189f * input.b;
-	float tg = 0.349f * input.r + 0.686f * input.g + 0.168f * input.b;
-	float tb = 0.272f * input.r + 0.534f * input.g + 0.131f * input.b;
 
-	output->r = (BYTE)std::min(255.0f, tr);
-	output->g = (BYTE)std::min(255.0f, tg);
-	output->b = (BYTE)std::min(255.0f, tb);
+
+void applyDesaturation(cv::Mat& image)
+{
+    for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			cv::Vec3b& rgbVector = image.at<cv::Vec3b>(i, j);
+			uchar grayscaleValue = static_cast<uchar>(
+				(0.3f * rgbVector[2]) +
+				(0.59f * rgbVector[1]) +
+				(0.11f * rgbVector[0])
+			);
+
+			rgbVector[0] = grayscaleValue;
+			rgbVector[1] = grayscaleValue;
+			rgbVector[2] = grayscaleValue;
+		}
+	}
 }
 
-void applyContrast(RGBColor input, RGBColor* output, float contrast)
+void applySepia(cv::Mat& image)
 {
-    // Clamp contrast to a reasonable range (e.g., -255 to 255)
-    contrast = std::max(-255.0f, std::min(255.0f, contrast));
+    // Code
+    for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			cv::Vec3b& rgbVector = image.at<cv::Vec3b>(i, j);
 
-    // Normalize contrast value
-    float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
+			float sepiaR = ((0.393f * static_cast<float>(rgbVector[2])) + (0.769f * static_cast<float>(rgbVector[1])) + (0.189f * static_cast<float>(rgbVector[0])));
+			float sepiaG = ((0.349f * static_cast<float>(rgbVector[2])) + (0.686f * static_cast<float>(rgbVector[1])) + (0.168f * static_cast<float>(rgbVector[0])));
+			float sepiaB = ((0.272f * static_cast<float>(rgbVector[2])) + (0.534f * static_cast<float>(rgbVector[1])) + (0.131f * static_cast<float>(rgbVector[0])));
 
-    output->r = (BYTE)std::clamp(factor * (input.r - 128.0f) + 128.0f, 0.0f, 255.0f);
-    output->g = (BYTE)std::clamp(factor * (input.g - 128.0f) + 128.0f, 0.0f, 255.0f);
-    output->b = (BYTE)std::clamp(factor * (input.b - 128.0f) + 128.0f, 0.0f, 255.0f);
+			rgbVector[0] = static_cast<uchar>(std::min(255.0f, sepiaB));
+			rgbVector[1] = static_cast<uchar>(std::min(255.0f, sepiaG));
+			rgbVector[2] = static_cast<uchar>(std::min(255.0f, sepiaR));
+		}
+	}
 }
 
+
+void applyColorInversion(cv::Mat& image)
+{
+    // Code
+    for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			cv::Vec3b& rgbVector = image.at<cv::Vec3b>(i, j);
+
+			rgbVector[0] = 255 - rgbVector[0];
+			rgbVector[1] = 255 - rgbVector[1];
+			rgbVector[2] = 255 - rgbVector[2];
+		}
+	}
+}
 
 void applyPixelate(cv::Mat* image, int blockSize)
 {

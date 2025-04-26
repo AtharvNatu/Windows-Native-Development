@@ -18,9 +18,7 @@ class ImageEditor :public IColorInversion
 		HRESULT __stdcall QueryInterface(REFIID, void**);
 		ULONG __stdcall AddRef(void);
 		ULONG __stdcall Release(void);
-
-		// Inherited ISum Method Declarations
-		HRESULT __stdcall ColorInversion(COLORREF, COLORREF*);
+		
 
 		// Custom Method for Inner Component Creation
 		HRESULT __stdcall InitializeInnerComponent(void);
@@ -148,29 +146,7 @@ ULONG ImageEditor::Release(void)
 }
 
 // IColorInversion's Methods
-HRESULT ImageEditor::ColorInversion(COLORREF originalPixelColor, COLORREF* negativePixelColor)
-{
-	// Code
-	unsigned int originalR = GetRValue(originalPixelColor);
-	unsigned int originalG = GetGValue(originalPixelColor);
-	unsigned int originalB = GetBValue(originalPixelColor);
 
-	unsigned int negativeR = 255 - originalR;
-	if (negativeR < 0)
-		negativeR = 0;
-	
-	unsigned int negativeG = 255 - originalG;
-	if (negativeG < 0)
-		negativeG = 0;
-
-	unsigned int negativeB = 255 - originalB;
-	if (negativeB < 0)
-		negativeB = 0;
-
-	*negativePixelColor = RGB(negativeR, negativeG, negativeB);
-
-	return S_OK;
-}
 
 HRESULT ImageEditor::InitializeInnerComponent(void)
 {

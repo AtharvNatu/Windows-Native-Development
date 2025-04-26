@@ -123,7 +123,9 @@ BOOL UseGPU(std::string, cv::Mat*);
 BOOL ConvertOCVImageToBGR(cv::Mat*);
 
 
-void applySepia(RGBColor input, RGBColor *output);
+void applyDesaturation(cv::Mat&);
+void applySepia(cv::Mat&);
+void applyColorInversion(cv::Mat&);
 void applyPixelate(cv::Mat* image, int blockSize);
 void applyGaussianBlur(cv::Mat* image, int kernelSize);
 

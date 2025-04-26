@@ -1,4 +1,3 @@
-#include <Windows.h>
 #include "ImageToolkit.h"
 
 // Interface Declaration
@@ -10,7 +9,7 @@ interface INoAggregationIUnknown
 };
 
 // Class Declarations
-class CImageToolkit :public INoAggregationIUnknown, IDesaturation, ISepia
+class CImageToolkit :public INoAggregationIUnknown, IDesaturation, ISepia, IColorInversion
 {
 	private:
 		long m_cRef;
@@ -36,6 +35,9 @@ class CImageToolkit :public INoAggregationIUnknown, IDesaturation, ISepia
 
 		// Inherited ISepia Method Declarations
 		HRESULT __stdcall Sepia(COLORREF, COLORREF*);
+
+		// Inherited IColorInversion Method Declarations
+		HRESULT __stdcall ColorInversion(COLORREF, COLORREF*);
 };
 
 class CImageToolkitClassFactory :public IClassFactory
@@ -176,48 +178,71 @@ ULONG CImageToolkit::Release(void)
 }
 
 // IDesaturation's Methods
-HRESULT CImageToolkit::Desaturation(COLORREF originalPixelColor, COLORREF* desaturatedPixelColor)
+HRESULT CImageToolkit::Desaturation(cv::Mat& image)
 {
 	// Code
-	unsigned int originalR = GetRValue(originalPixelColor);
-	unsigned int originalG = GetGValue(originalPixelColor);
-	unsigned int originalB = GetBValue(originalPixelColor);
+	for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			cv::Vec3b& rgbVector = image.at<cv::Vec3b>(i, j);
+			uchar grayscaleValue = static_cast<uchar>(
+				(0.3f * rgbVector[2]) +
+				(0.59f * rgbVector[1]) +
+				(0.11f * rgbVector[0])
+			);
 
-	unsigned int desaturatedR = (unsigned int)((float)originalR * 0.3f);
-	unsigned int desaturatedG = (unsigned int)((float)originalG * 0.59f);
-	unsigned int desaturatedB = (unsigned int)((float)originalB * 0.11f);
-
-	unsigned int finalDesaturatedColor = desaturatedR + desaturatedG + desaturatedB;
-
-	*desaturatedPixelColor = RGB(finalDesaturatedColor, finalDesaturatedColor, finalDesaturatedColor);
+			rgbVector[0] = grayscaleValue;
+			rgbVector[1] = grayscaleValue;
+			rgbVector[2] = grayscaleValue;
+		}
+	}
 
 	return S_OK;
 }
 
 // ISepia's Methods
-HRESULT CImageToolkit::Sepia(COLORREF originalPixelColor, COLORREF* sepiaPixelColor)
+HRESULT CImageToolkit::Sepia(cv::Mat& image)
 {
 	// Code
-	unsigned int originalR = GetRValue(originalPixelColor);
-	unsigned int originalG = GetGValue(originalPixelColor);
-	unsigned int originalB = GetBValue(originalPixelColor);
+	for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			cv::Vec3b& rgbVector = image.at<cv::Vec3b>(i, j);
 
-	unsigned int sepiaR = (unsigned int)(((float)originalR * 0.393f) + ((float)originalG * 0.769f) + ((float)originalB * 0.189f));
-	if (sepiaR > 255)
-		sepiaR = 255;
-	
-	unsigned int sepiaG = (unsigned int)(((float)originalR * 0.349f) + ((float)originalG * 0.686f) + ((float)originalB * 0.168f));
-	if (sepiaG > 255)
-		sepiaG = 255;
+			float sepiaR = ((0.393f * static_cast<float>(rgbVector[2])) + (0.769f * static_cast<float>(rgbVector[1])) + (0.189f * static_cast<float>(rgbVector[0])));
+			float sepiaG = ((0.349f * static_cast<float>(rgbVector[2])) + (0.686f * static_cast<float>(rgbVector[1])) + (0.168f * static_cast<float>(rgbVector[0])));
+			float sepiaB = ((0.272f * static_cast<float>(rgbVector[2])) + (0.534f * static_cast<float>(rgbVector[1])) + (0.131f * static_cast<float>(rgbVector[0])));
 
-	unsigned int sepiaB = (unsigned int)(((float)originalR * 0.272f) + ((float)originalG * 0.534f) + ((float)originalB * 0.131f));
-	if (sepiaB > 255)
-		sepiaB = 255;
-
-	*sepiaPixelColor = RGB(sepiaR, sepiaG, sepiaB);
+			rgbVector[0] = static_cast<uchar>(std::min(255.0f, sepiaB));
+			rgbVector[1] = static_cast<uchar>(std::min(255.0f, sepiaG));
+			rgbVector[2] = static_cast<uchar>(std::min(255.0f, sepiaR));
+		}
+	}
 
 	return S_OK;
 }
+
+// IColorInversion's Methods
+HRESULT CImageToolkit::ColorInversion(cv::Mat& image)
+{
+	// Code
+	for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			cv::Vec3b& rgbVector = image.at<cv::Vec3b>(i, j);
+
+			rgbVector[0] = 255 - rgbVector[0];
+			rgbVector[1] = 255 - rgbVector[1];
+			rgbVector[2] = 255 - rgbVector[2];
+		}
+	}
+
+	return S_OK;
+}
+
 //-----------------------------------------------------------------------------------------------------
 
 // CImageToolkitClassFactory Method Implementations
