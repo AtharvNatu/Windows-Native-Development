@@ -1104,8 +1104,16 @@ void applySepia(cv::Mat& image)
             );
 
 			float sepiaG = (
-                (0.349f * static_cast<float>(rgbVector[2])) + (0.686f * static_cast<float>(rgbVector[1])) + (0.168f * static_cast<float>(rgbVector[0])));
-			float sepiaB = ((0.272f * static_cast<float>(rgbVector[2])) + (0.534f * static_cast<float>(rgbVector[1])) + (0.131f * static_cast<float>(rgbVector[0])));
+                (0.349f * static_cast<float>(rgbVector[2])) + 
+                (0.686f * static_cast<float>(rgbVector[1])) + 
+                (0.168f * static_cast<float>(rgbVector[0]))
+            );
+			
+            float sepiaB = (
+                (0.272f * static_cast<float>(rgbVector[2])) + 
+                (0.534f * static_cast<float>(rgbVector[1])) + 
+                (0.131f * static_cast<float>(rgbVector[0]))
+            );
 
 			rgbVector[0] = static_cast<uchar>(std::min(255.0f, sepiaB));
 			rgbVector[1] = static_cast<uchar>(std::min(255.0f, sepiaG));

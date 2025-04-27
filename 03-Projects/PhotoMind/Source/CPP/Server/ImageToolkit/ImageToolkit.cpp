@@ -211,10 +211,24 @@ HRESULT CImageToolkit::Sepia(cv::Mat& image)
 		{
 			cv::Vec3b& rgbVector = image.at<cv::Vec3b>(i, j);
 
-			float sepiaR = ((0.393f * static_cast<float>(rgbVector[2])) + (0.769f * static_cast<float>(rgbVector[1])) + (0.189f * static_cast<float>(rgbVector[0])));
-			float sepiaG = ((0.349f * static_cast<float>(rgbVector[2])) + (0.686f * static_cast<float>(rgbVector[1])) + (0.168f * static_cast<float>(rgbVector[0])));
-			float sepiaB = ((0.272f * static_cast<float>(rgbVector[2])) + (0.534f * static_cast<float>(rgbVector[1])) + (0.131f * static_cast<float>(rgbVector[0])));
+			float sepiaR = (
+                (0.393f * static_cast<float>(rgbVector[2])) + 
+                (0.769f * static_cast<float>(rgbVector[1])) + 
+                (0.189f * static_cast<float>(rgbVector[0]))
+            );
 
+			float sepiaG = (
+                (0.349f * static_cast<float>(rgbVector[2])) + 
+                (0.686f * static_cast<float>(rgbVector[1])) + 
+                (0.168f * static_cast<float>(rgbVector[0]))
+            );
+			
+            float sepiaB = (
+                (0.272f * static_cast<float>(rgbVector[2])) + 
+                (0.534f * static_cast<float>(rgbVector[1])) + 
+                (0.131f * static_cast<float>(rgbVector[0]))
+            );
+			
 			rgbVector[0] = static_cast<uchar>(std::min(255.0f, sepiaB));
 			rgbVector[1] = static_cast<uchar>(std::min(255.0f, sepiaG));
 			rgbVector[2] = static_cast<uchar>(std::min(255.0f, sepiaR));

@@ -44,8 +44,9 @@ class CudaUtils
 };
 
 
-int applyDesatCUDA(cv::Mat&);
-void applySepiaCUDA(cv::Mat&);
-void applyNegCUDA(cv::Mat&);
+int applyDesaturationCUDA(cv::Mat&);
+int applySepiaCUDA(cv::Mat&);
+int applyColorInversionCUDA(cv::Mat&);
+int applyGaussianBlurCUDA(cv::Mat&);
+
 void applyPixCUDA(cv::Mat&);
-void applyBlurCUDA(cv::Mat&);

@@ -680,86 +680,76 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 						{		
 							//! Desaturation
 							PrintLogWithTime(&gpFile_UserLog, "User Applied Desaturation Effect\n");
-							// for (int yRow = 0; yRow < renderImage.rows; yRow++)
-							// {
-							// 	cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
-							// 	for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
-							// 	{
-							// 		COLORREF originalPixelColor = RGB(row[xColumn][2], row[xColumn][1], row[xColumn][0]);
-							// 		pIDesaturation->Desaturation(originalPixelColor, &desaturatedPixelColor);
-							// 		BYTE r = GetRValue(desaturatedPixelColor);
-							// 		BYTE g = GetGValue(desaturatedPixelColor);
-							// 		BYTE b = GetBValue(desaturatedPixelColor);
-							// 		row[xColumn] = cv::Vec3b(b, g, r);
-							// 	}
-							// }
 							if (bUseGPU) 
 							{
-								int status = applyDesatCUDA(renderImage);
+								int status = applyDesaturationCUDA(renderImage);
 								if (status != 0)
-								{
 									PrintLogWithTime(&gpFile_AppLog, "CUDA Desaturation Failed : Return Code = %d\n", status);
-								}
+								else
+									PrintLogWithTime(&gpFile_AppLog, "CUDA Desaturation Succeeded\n");
 							}
 							else
 								applyDesaturation(renderImage);
+
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
-						else if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
+
+						if (IsDlgButtonChecked(hDlg, ID_RB_SEPIA))
 						{
 							//! Sepia
 							PrintLogWithTime(&gpFile_UserLog, "User Applied Sepia Effect\n");
-							// for (int yRow = 0; yRow < renderImage.rows; yRow++)
-							// {
-							// 	cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
-							// 	for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
-							// 	{
-							// 		RGBColor input = 
-							// 		{
-							// 			row[xColumn][2],
-							// 			row[xColumn][1],
-							// 			row[xColumn][0],
-							// 		};
+							if (bUseGPU) 
+							{
+								int status = applySepiaCUDA(renderImage);
+								if (status != 0)
+									PrintLogWithTime(&gpFile_AppLog, "CUDA Sepia Failed : Return Code = %d\n", status);
+								else
+									PrintLogWithTime(&gpFile_AppLog, "CUDA Sepia Succeeded\n");
+							}
+							else
+								applySepia(renderImage);
 
-							// 		RGBColor output;
-							// 		applySepia(input, &output);
-									
-							// 		row[xColumn] = cv::Vec3b(output.b, output.g, output.r);
-							// 	}
-							// }
-							applySepia(renderImage);
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
-						else if (IsDlgButtonChecked(hDlg, ID_RB_INV))
+
+						if (IsDlgButtonChecked(hDlg, ID_RB_INV))
 						{
 							//! Inversion
 							PrintLogWithTime(&gpFile_UserLog, "User Applied Inversion Effect\n");
-							// for (int yRow = 0; yRow < renderImage.rows; yRow++)
-							// {
-							// 	cv::Vec3b* row = renderImage.ptr<cv::Vec3b>(yRow);
-							// 	for (int xColumn = 0; xColumn < renderImage.cols; xColumn++)
-							// 	{
-							// 		COLORREF originalPixelColor = RGB(row[xColumn][2], row[xColumn][1], row[xColumn][0]);
-							// 		pIColorInversion->ColorInversion(originalPixelColor, &negativePixelColor);
-							// 		BYTE r = GetRValue(negativePixelColor);
-							// 		BYTE g = GetGValue(negativePixelColor);
-							// 		BYTE b = GetBValue(negativePixelColor);
-							// 		row[xColumn] = cv::Vec3b(b, g, r);
-							// 	}
-							// }
-							applyColorInversion(renderImage);
+							if (bUseGPU) 
+							{
+								int status = applyColorInversionCUDA(renderImage);
+								if (status != 0)
+									PrintLogWithTime(&gpFile_AppLog, "CUDA Color Inversion Failed : Return Code = %d\n", status);
+								else
+									PrintLogWithTime(&gpFile_AppLog, "CUDA Color Inversion Succeeded\n");
+							}
+							else
+								applyColorInversion(renderImage);
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
-						else if (IsDlgButtonChecked(hDlg, ID_RB_PIX))
+
+						if (IsDlgButtonChecked(hDlg, ID_RB_PIX))
 						{
 							PrintLogWithTime(&gpFile_UserLog, "User Applied Pixelation Effect\n");
 							applyPixelate(&renderImage, 20);
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
-						else if (IsDlgButtonChecked(hDlg, ID_RB_GAUSBLUR))
+
+						if (IsDlgButtonChecked(hDlg, ID_RB_GAUSBLUR))
 						{
-							PrintLogWithTime(&gpFile_UserLog, "User Blur Inversion Effect\n");
-							applyGaussianBlur(&renderImage, 21);
+							PrintLogWithTime(&gpFile_UserLog, "User Applied Blur Inversion Effect\n");
+							if (bUseGPU) 
+							{
+								int status = applyGaussianBlurCUDA(renderImage);
+								if (status != 0)
+									PrintLogWithTime(&gpFile_AppLog, "CUDA Gaussian Blur Failed : Return Code = %d\n", status);
+								else
+									PrintLogWithTime(&gpFile_AppLog, "CUDA Gaussian Blur Succeeded\n");
+							}
+							else
+								applyGaussianBlur(&renderImage, 21);
+							
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
 						}
 					}

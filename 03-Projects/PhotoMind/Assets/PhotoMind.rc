@@ -53,11 +53,11 @@ FONT 11, "Poppins"
 BEGIN
     GROUPBOX "Image Editor",                                ID_GRPBOX_EDITOR,               10, 15, 180, 110
         GROUPBOX "Choose Effect",                           ID_GRPBOX_EFFECTS,              20, 30, 100, 90
-            AUTORADIOBUTTON "Desaturation",                 ID_RB_DESAT                     25, 45, 80, 10
-            AUTORADIOBUTTON "Sepia",                        ID_RB_SEPIA                     25, 60, 80, 10
-            AUTORADIOBUTTON "Color Inversion",              ID_RB_INV                       25, 75, 80, 10
-            AUTORADIOBUTTON "Pixelate",                     ID_RB_PIX                       25, 90, 80, 10
-            AUTORADIOBUTTON "Blur",                         ID_RB_GAUSBLUR                  25, 105, 80, 10
+            AUTOCHECKBOX "Desaturation",                    ID_RB_DESAT                     25, 45, 80, 10
+            AUTOCHECKBOX "Sepia",                           ID_RB_SEPIA                     25, 60, 80, 10
+            AUTOCHECKBOX "Color Inversion",                 ID_RB_INV                       25, 75, 80, 10
+            AUTOCHECKBOX "Pixelate",                        ID_RB_PIX                       25, 90, 80, 10
+            AUTOCHECKBOX "Blur",                            ID_RB_GAUSBLUR                  25, 105, 80, 10
 
         DEFPUSHBUTTON "Apply Effect",                       ID_APPLY,                       127, 48, 50, 12
         DEFPUSHBUTTON "Reset Image",                        ID_RESET,                       127, 68, 50, 12
