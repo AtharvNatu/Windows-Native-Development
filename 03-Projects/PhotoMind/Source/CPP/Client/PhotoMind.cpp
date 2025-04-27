@@ -581,6 +581,9 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 	const char* path;
 	char escapedPath[MAX_PATH * 2];
 
+	static double gpuTime = 0.0;
+	static int status = 0;
+
 	// Code
 	switch(iMsg)
 	{
@@ -682,7 +685,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 							PrintLogWithTime(&gpFile_UserLog, "User Applied Desaturation Effect\n");
 							if (bUseGPU) 
 							{
-								int status = applyDesaturationCUDA(renderImage);
+								applyCUDAEffect(renderImage, DESATURATION_CUDA, status);
 								if (status != 0)
 									PrintLogWithTime(&gpFile_AppLog, "CUDA Desaturation Failed : Return Code = %d\n", status);
 								else
@@ -700,7 +703,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 							PrintLogWithTime(&gpFile_UserLog, "User Applied Sepia Effect\n");
 							if (bUseGPU) 
 							{
-								int status = applySepiaCUDA(renderImage);
+								applyCUDAEffect(renderImage, SEPIA_CUDA, status);
 								if (status != 0)
 									PrintLogWithTime(&gpFile_AppLog, "CUDA Sepia Failed : Return Code = %d\n", status);
 								else
@@ -718,7 +721,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 							PrintLogWithTime(&gpFile_UserLog, "User Applied Inversion Effect\n");
 							if (bUseGPU) 
 							{
-								int status = applyColorInversionCUDA(renderImage);
+								applyCUDAEffect(renderImage, COLOR_INVERSION_CUDA, status);
 								if (status != 0)
 									PrintLogWithTime(&gpFile_AppLog, "CUDA Color Inversion Failed : Return Code = %d\n", status);
 								else
@@ -741,7 +744,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 							PrintLogWithTime(&gpFile_UserLog, "User Applied Blur Inversion Effect\n");
 							if (bUseGPU) 
 							{
-								int status = applyGaussianBlurCUDA(renderImage);
+								applyCUDAEffect(renderImage, GAUSSIAN_BLUR_CUDA, status);
 								if (status != 0)
 									PrintLogWithTime(&gpFile_AppLog, "CUDA Gaussian Blur Failed : Return Code = %d\n", status);
 								else
@@ -751,6 +754,7 @@ INT_PTR CALLBACK ControlsDialogProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM 
 								applyGaussianBlur(&renderImage, 21);
 							
 							InvalidateRect(GetParent(hDlg), NULL, TRUE);
+							
 						}
 					}
 				break;

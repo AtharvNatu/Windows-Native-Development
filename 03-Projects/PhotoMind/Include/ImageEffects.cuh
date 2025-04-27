@@ -31,6 +31,23 @@ typedef signed char schar_t;
 #define THREADS_PER_BLOCK           1024
 #define BLOCK_SIZE                  32
 
+enum CUDA_EFFECT
+{
+    DESATURATION_CUDA,
+    SEPIA_CUDA,
+    COLOR_INVERSION_CUDA,
+    PIXELATION_CUDA,
+    GAUSSIAN_BLUR_CUDA
+};
+
+enum CUDA_STATUS
+{
+    MEM_ALLOC_ERROR = -1,
+    MEM_COPY_HOST_TO_DEVICE_ERROR = -2,
+    MEM_COPY_DEVICE_TO_HOST_ERROR = -3,
+    SUCCESS = 0
+};
+
 class CudaUtils
 {
     public:
@@ -39,14 +56,10 @@ class CudaUtils
     bool memSet(void *devPtr, int value, size_t count);
     bool memCopy(void *dst, const void *src, size_t count, cudaMemcpyKind kind);
     void memFree(void **devPtr);
-    void convertImageToPixelArr(uchar_t *imageData, uchar3 *pixelArray, size_t size);
-    void convertPixelArrToImage(uchar3 *pixelArray, uchar_t *imageData, size_t size);
 };
 
 
-int applyDesaturationCUDA(cv::Mat&);
-int applySepiaCUDA(cv::Mat&);
-int applyColorInversionCUDA(cv::Mat&);
-int applyGaussianBlurCUDA(cv::Mat&);
+void applyCUDAEffect(cv::Mat&, int, int&);
 
+int applyGaussianBlurCUDA(cv::Mat&);
 void applyPixCUDA(cv::Mat&);
