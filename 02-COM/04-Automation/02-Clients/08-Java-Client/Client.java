@@ -1,4 +1,4 @@
-public class JavaClient 
+public class Client 
 {
     public static void main(String[] args) 
     {
@@ -22,10 +22,10 @@ public class JavaClient
             System.exit(-1);
         }
 
-        int result = jcw.Invoke("SumOfTwoIntegers", 10, 20, 30, 40, 50);
+        int result = jcw.Invoke("SumOfTwoIntegers", 10, 654);
         System.out.println("Addition = " + result);
 
-        result = jcw.Invoke("SubtractionOfTwoIntegers", 10, 20);
+        result = jcw.Invoke("SubtractionOfTwoIntegers", 30, 20);
         System.out.println("Subtraction = " + result);
 
         jcw.CoUninitialize();
