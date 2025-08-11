@@ -1,3 +1,0 @@
-Checking image format...
-Image is in BGR format. Proceeding with conversion.
-CUDA memory allocation failed!

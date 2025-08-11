@@ -11,7 +11,7 @@ const clsIdMyMath = '{69DEFCBC-00E1-4817-A8D1-C608EE5C20F3}';
   //! Initialize COM
   CoInitializeEx(
     nullptr,
-    COINIT.COINIT_APARTMENTTHREADED | COINIT.COINIT_DISABLE_OLE1DDE,
+    COINIT_APARTMENTTHREADED,
   );
 
   Dispatcher dispatcher = Dispatcher.fromCLSID(clsIdMyMath);
@@ -21,10 +21,10 @@ const clsIdMyMath = '{69DEFCBC-00E1-4817-A8D1-C608EE5C20F3}';
 
   VariantInit(vArg);
   {
-    vArg[0].vt = VARENUM.VT_INT;
+    vArg[0].vt = VT_INT;
     vArg[0].intVal = num2;
 
-    vArg[1].vt = VARENUM.VT_INT;
+    vArg[1].vt = VT_INT;
     vArg[1].intVal = num1;
 
     dispParams.ref.cArgs = 2;
