@@ -1,10 +1,10 @@
-#include "JavaCOMWrapper.h"
+#include "com_automation_server_JavaCOMServer.h"
 #include "AutomationServer.h"
 
 IDispatch* pIDispatch = NULL;
 HRESULT hr = NULL;
 
-JNIEXPORT jboolean JNICALL Java_JavaCOMWrapper__1_1initializeCOM(JNIEnv *, jobject)
+JNIEXPORT jboolean JNICALL Java_com_automation_server_JavaCOMServer__1_1initializeCOM(JNIEnv *, jobject)
 {
     hr = CoInitialize(NULL);
     if (FAILED(hr))
@@ -31,7 +31,7 @@ OLECHAR* ConvertJStringToOleChar(JNIEnv* env, jstring jStr)
     return buffer;
 }
 
-JNIEXPORT jboolean JNICALL Java_JavaCOMWrapper__1_1createInstance(JNIEnv *env, jobject, jstring clsID)
+JNIEXPORT jboolean JNICALL Java_com_automation_server_JavaCOMServer__1_1createInstance(JNIEnv *env, jobject, jstring clsID)
 {
     IID iidMyMath;
     OLECHAR* szClsId = ConvertJStringToOleChar(env, clsID);
@@ -40,8 +40,8 @@ JNIEXPORT jboolean JNICALL Java_JavaCOMWrapper__1_1createInstance(JNIEnv *env, j
 
     hr = CoCreateInstance(
 				iidMyMath,
-				NULL,						// NULL specifies No Aggregation
-				CLSCTX_INPROC_SERVER,		// CLSCTX_INPROC_SERVER => Server Type is DLL
+				NULL,
+				CLSCTX_INPROC_SERVER,
 				IID_IDispatch,
 				(void**)&pIDispatch
 			);
@@ -60,36 +60,31 @@ JNIEXPORT jboolean JNICALL Java_JavaCOMWrapper__1_1createInstance(JNIEnv *env, j
 }
 
 
-JNIEXPORT jint JNICALL Java_JavaCOMWrapper__1_1invoke(JNIEnv* env, jobject, jstring functionName, jintArray args)
+JNIEXPORT jint JNICALL Java_com_automation_server_JavaCOMServer__1_1invoke(JNIEnv* env, jobject, jstring functionName, jint iNum1, jint iNum2)
 {
     DISPID dispId;
     DISPPARAMS param;
 
-    VARIANT vArg[_ARRAYSIZE(args)];
+    VARIANT vArg[2];
     VARIANT vRetval;
 
     OLECHAR* szFunctionName = ConvertJStringToOleChar(env, functionName);
 
-    int argCount = env->GetArrayLength(args);
-
-    jint* numbers = env->GetIntArrayElements(args, nullptr);
-
     VariantInit(vArg);
     {
-        for (int i = argCount; i >= 0; i--)
-        {
-            vArg[i].vt = VT_INT;
-            vArg[i].intVal = numbers[i];
-        }
+        vArg[0].vt = VT_INT;
+        vArg[0].intVal = iNum2;
+        
+        vArg[1].vt = VT_INT;
+        vArg[1].intVal = iNum1;
 
         param.rgvarg = vArg;
-        param.cArgs = argCount;
+        param.cArgs = 2;
         param.cNamedArgs = 0;
         param.rgdispidNamedArgs = NULL;
 
         VariantInit(&vRetval);
         {
-            // Get DISPID of SumOfTwoIntegers()
             hr = pIDispatch->GetIDsOfNames(
                 IID_NULL,
                 &szFunctionName,
@@ -119,14 +114,11 @@ JNIEXPORT jint JNICALL Java_JavaCOMWrapper__1_1invoke(JNIEnv* env, jobject, jstr
     }
     VariantClear(vArg);
 
-    env->ReleaseIntArrayElements(args, numbers, 0);
-    numbers = nullptr;
-
     if (szFunctionName)
         delete[] szFunctionName;
 }
 
-JNIEXPORT void JNICALL Java_JavaCOMWrapper__1_1uninitializeCOM(JNIEnv *, jobject)
+JNIEXPORT void JNICALL Java_com_automation_server_JavaCOMServer__1_1uninitializeCOM(JNIEnv *, jobject)
 {
     if (pIDispatch)
 	{
