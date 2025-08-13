@@ -15,5 +15,3 @@ To Build the Source Code using x64 Native Tools Command Prompt
 
 You can find a .bat file for every code in respective directories which automates the above build process
 
-
-<img width="388" height="426" alt="Screenshot 2025-08-13 101307" src="https://github.com/user-attachments/assets/fae4b4bf-e10a-40c7-9911-e9792ba45976" />
